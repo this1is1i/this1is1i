@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>ServiceBus Class Flowchart</title>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+    <style>
+        .container {
+            width: 100%;
+            height: 100vh;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="mermaid">
+        graph TD
+        subgraph "ServiceBus Constructor"
+        A1("ServiceBus()") --> A2["调用 loadServicesFromConfig()"]
+        A2 --> A3["添加类到 serviceClasses 和 targetClassNameSet"]
+        A3 --> A4{"serviceClasses 为空?"}
+        A4 -->|是| A5["抛出异常"]
+        A4 -->|否| A6["构造完成"]
+
+        B1("ServiceBus(IServices...)") --> B2["遍历services"]
+        B2 --> B3["调用register方法注册"]
+        B3 --> B4{"serviceClasses 为空?"}
+        B4 -->|是| B5["抛出异常"]
+        B4 -->|否| B6["构造完成"]
+        end
+
+        subgraph "loadServicesFromConfig"
+        C1["读取services.txt"] --> C2["逐行读取"]
+        C2 --> C3["尝试加载类"]
+        C3 --> C4{"实现IServices接口?"}
+        C4 -->|是| C5["添加到serviceClasses"]
+        C4 -->|否| C6["打印错误信息"]
+        C6 --> C2
+        end
+
+        subgraph "doS方法"
+        D1["遍历serviceClasses"] --> D2{"类名在targetClassNameSet?"}
+        D2 -->|是| D3["反射创建实例"]
+        D3 --> D4["调用execute()"]
+        D2 -->|否| D1
+        end
+
+        subgraph "其他方法"
+        E1["register"] --> E2["检查并添加类到列表"]
+        F1["remove"] --> F2["从列表移除类"]
+        G1["setService"] --> G2["遍历并调用register"]
+        H1["removeService"] --> H2["遍历并调用remove"]
+        I1["OnlyReserveService"] --> I2["清空targetClassNameSet"]
+        I2 --> I3["添加新类名到集合"]
+        end
+
+        style ServiceBus构造器 fill:#f9f,stroke:#333
+        style loadServicesFromConfig fill:#9ff,stroke:#333
+        style doS方法 fill:#ff9,stroke:#333
+        style 其他方法 fill:#faa,stroke:#333
+    </div>
+</div>
+
+<script>
+    mermaid.initialize({ startOnLoad: true });
+</script>
+</body>
+</html>

@@ -43,6 +43,8 @@ public class ServiceBus {
     private void register(IServices service);
     private void remove(IServices service);
     public void setService(IServices... services);
+    public void removeService(IServices... services);
+    public void OnlyReserveService(IServices service);
 }
 ```
 
@@ -52,6 +54,8 @@ public class ServiceBus {
 - `register(IServices service)`：注册单个服务。（私有的）
 - `remove(IServices service)`：移除单个服务。（私有的）
 - `setService(IServices... services)`：在没有使用带参构造函数时，必须使用此方法批量注册想要使用的个人服务。
+- `removeService(IServices... services)`：从已保存的所有服务类列表中移除传入的服务类。
+- `OnlyReserveService(IServices service)`：将要执行的所有服务类的列表清空，只保留传入的目标服务类。
 
 ## 使用说明
 
@@ -62,13 +66,14 @@ public class ServiceBus {
 ```
 org.Zyuhang.ServiceL.MyServiceA
 ```
+注意：此配置文件本意为服务器所维护
 
 ### 注册服务
 
 可以通过以下两种方式注册服务：
 
 1. **通过配置文件**：在 `services.txt` 中添加服务类的全限定名，`ServiceBus` 将在启动时自动加载这些服务。
-2. **手动注册**：使用 `ServiceBus` 的带参数构造函数或 `setService` 方法手动注册服务。
+2. **手动注册**：使用 `ServiceBus` 的带参数构造函数或 `setService` 方法手动注册服务。（既可以一次传入多个服务类，也支持多次传入不同服务类）
 
 ### 执行服务
 
@@ -107,7 +112,7 @@ public class MyServiceA implements IServices {
 
 欢迎对项目进行贡献。请遵循以下步骤：
 
-1. Fork 项目到你的GitHub账户。
+1. Fork [项目](https://github.com/this1is1i/this1is1i/tree/main/SoftBus)到你的GitHub账户。
 2. 创建一个新的分支进行修改。
 3. 提交你的改动并发起一个Pull Request。
 

@@ -32,8 +32,7 @@ public class ServiceBus {
     //编写此方法以适用于服务众多时的首次调用检索速度
     /**
       *此处问题在于是否会因反复创建对象而导致速度变慢
-      * 可以考虑使用单例模式来解决此问题
-      * 可以考虑使用静态内部类来解决此问题
+      * 可以考虑使用单例模式、静态内部类来解决此问题
       * 以及配置文件的管理同样需要严格规范
       * 或许可以再添加一个serviceClassNameSet来存储类名，然后在注册时将类名添加到serviceClassNameSet中？
      */
@@ -65,33 +64,43 @@ public class ServiceBus {
         }
     }
 
+    /**
+     * 由下部分帮助文档可知，此方法newInstance新建出来的对象是没有被初始化的，
+     * 所以需要使用getDeclaredConstructor().newInstance()来获取实例
+     * 但是这会导致只能使用无参构造器，因为在注册时使用的是getClass()，导致参数实际上并没有传递进来
+     * 可以尝试将ServiceBus busExample = new ServiceBus(new MyServiceA())换为ServiceBus busExample = new ServiceBus(new MyServiceA("123456789"));以验证
+     * 因此借助第二个含参构造模拟登陆情况
+     *   反射获取实例
+     *  Uses the constructor represented by this {@code Constructor} object to
+     *  create and initialize a new instance of the constructor's
+     *  declaring class, with the specified initialization parameters.
+     *  Individual parameters are automatically unwrapped to match
+     *  primitive formal parameters, and both primitive and reference
+     *  parameters are subject to method invocation conversions as necessary.
+     *
+     *  <p>If the number of formal parameters required by the underlying constructor
+     *  is 0, the supplied {@code initargs} array may be of length 0 or null.
+     *
+     *  <p>If the constructor's declaring class is an inner class in a
+     *  non-static context, the first argument to the constructor needs
+     *  to be the enclosing instance; see section 15.9.3 of
+     *  <cite>The Java&trade; Language Specification</cite>.
+     *
+     *  <p>If the required access and argument checks succeed and the
+     *  instantiation will proceed, the constructor's declaring class
+     *  is initialized if it has not already been initialized.
+     *
+     *  <p>If the constructor completes normally, returns the newly
+     *  created and initialized instance.
+     *  @ param init args array of objects to be passed as arguments to
+     *  the constructor call; values of primitive types are wrapped in
+     *  a wrapper object of the appropriate type (e.g. a {@code float}
+     *  in a {@link java.lang.Float Float})
+     *
+     */
     public void doS(Object... args) throws Exception {
         for (Class<? extends IServices> serviceClass : serviceClasses) {
             if (targetClassNameSet.contains(serviceClass.getName())) {
-                /*
-                  由下部分帮助文档可知，此方法newInstance新建出来的对象是没有被初始化的，
-                  所以需要使用getDeclaredConstructor().newInstance()来获取实例
-                  但是这会导致只能使用无参构造器，因为在注册时使用的是getClass()，导致参数实际上并没有传递进来
-                  可以尝试将ServiceBus busExample = new ServiceBus(new MyServiceA())换为ServiceBus busExample = new ServiceBus(new MyServiceA("123456789"));以验证
-                  因此借助第二个含参构造模拟登陆情况
-                  Uses the constructor represented by this Constructor object to create and initialize a new instance of the constructor's declaring class, with the specified initialization parameters. Individual parameters are automatically unwrapped to match primitive formal parameters, and both primitive and reference parameters are subject to method invocation conversions as necessary.
-                  If the number of formal parameters required by the underlying constructor is 0, the supplied initargs array may be of length 0 or null.
-                  If the constructor's declaring class is an inner class in a non-static context, the first argument to the constructor needs to be the enclosing instance; see section 15.9.3 of The Java™ Language Specification.
-                  If the required access and argument checks succeed and the instantiation will proceed, the constructor's declaring class is initialized if it has not already been initialized.
-                  If the constructor completes normally, returns the newly created and initialized instance.
-                  形参:
-                  initargs – array of objects to be passed as arguments to the constructor call; values of primitive types are wrapped in a wrapper object of the appropriate type (e.g. a float in a Float)
-                  返回值:
-                  a new object created by calling the constructor this object represents
-                  抛出:
-                  IllegalAccessException – if this Constructor object is enforcing Java language access control and the underlying constructor is inaccessible.
-                  IllegalArgumentException – if the number of actual and formal parameters differ; if an unwrapping conversion for primitive arguments fails; or if, after possible unwrapping, a parameter value cannot be converted to the corresponding formal parameter type by a method invocation conversion; if this constructor pertains to an enum type.
-                  InstantiationException – if the class that declares the underlying constructor represents an abstract class.
-                  InvocationTargetException – if the underlying constructor throws an exception.
-                  ExceptionInInitializerError – if the initialization provoked by this method fails.
-
-                  反射获取实例
-                 */
                 IServices service = serviceClass.getDeclaredConstructor(Boolean.class).newInstance(true);
                 service.execute(args);
             }
@@ -99,7 +108,8 @@ public class ServiceBus {
     }
 
     private void register(IServices service) {
-        serviceClasses.add(service.getClass());
+        if(!serviceClasses.contains(service.getClass()))
+            serviceClasses.add(service.getClass());
     }
 
     private void remove(IServices service) {
@@ -109,11 +119,21 @@ public class ServiceBus {
     public void setService(IServices... services) {
         for (IServices service : services) {
             register(service);
+            targetClassNameSet.add(service.getClass().getName());
         }
         if (serviceClasses.isEmpty()) {
             throw new IllegalArgumentException("没有注册服务");
-        } else {
-            serviceClasses.forEach(serviceClass -> targetClassNameSet.add(serviceClass.getName()));
         }
+    }
+
+    public void removeService(IServices... services){
+        for (IServices service: services) {
+            remove(service);
+        }
+    }
+
+    public void OnlyReserveService(IServices service){
+        targetClassNameSet.clear();
+        targetClassNameSet.add(service.getClass().getName());
     }
 }
