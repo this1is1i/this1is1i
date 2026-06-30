@@ -10,6 +10,7 @@
 |------|--------|------|
 | `qa-git-track` | `/qa-git`、`记录到QA里` | 将技术问答与 git commit 绑定，通过 MkDocs + GitHub Pages 发布为可检索的知识库网站 |
 | `learn-with-analogy` | `/learn`、`用类比解释` | 用四步结构（概念前置→类比锚定→故事深化→类比边界）讲解研究生水平专业概念 |
+| `iter-fix` | `/iter-fix`、`迭代修复` | 自动化"改代码→构建→运行→查日志→分析→再改"的闭环调试流程 |
 
 ---
 
@@ -34,16 +35,18 @@ cd claude-skills
 
 ### 手动安装
 
-将 `qa-git-track.md` 和 `learn-with-analogy.md` 复制到 `~/.claude/skills/` 目录：
+将 `qa-git-track.md`、`learn-with-analogy.md` 和 `iter-fix.md` 复制到 `~/.claude/skills/` 目录：
 
 ```bash
 # Linux / macOS
 cp qa-git-track.md ~/.claude/skills/
 cp learn-with-analogy.md ~/.claude/skills/
+cp iter-fix.md ~/.claude/skills/
 
 # Windows (PowerShell)
 Copy-Item qa-git-track.md "$env:USERPROFILE\.claude\skills\"
 Copy-Item learn-with-analogy.md "$env:USERPROFILE\.claude\skills\"
+Copy-Item iter-fix.md "$env:USERPROFILE\.claude\skills\"
 ```
 
 ---
@@ -75,6 +78,16 @@ Claude: [从分布式系统中挑选 CAP 定理，按四步结构讲解]
 Claude: [直接用 MVCC 概念，跳过领域选择，进入四步结构]
 ```
 
+### Skill 3: 迭代纠错
+
+```
+用户: /iter-fix 黑洞显示正常，点击能退出
+Claude: [启动 /iter-fix 循环]
+        [第1轮] 阅读日志 → glTexImage2D 为 null → 添加回退 → 构建✅ 运行❌ 壁纸crash
+        [第2轮] 阅读日志 → ComPtr 不兼容 MinGW → 改用原生 COM → 构建✅ 运行✅
+        [完成] 共 2 轮迭代，3 个 bug 修复
+```
+
 ---
 
 ## 卸载
@@ -84,6 +97,7 @@ Claude: [直接用 MVCC 概念，跳过领域选择，进入四步结构]
 ```bash
 rm ~/.claude/skills/qa-git-track.md
 rm ~/.claude/skills/learn-with-analogy.md
+rm ~/.claude/skills/iter-fix.md
 ```
 
 ---
@@ -117,6 +131,18 @@ rm ~/.claude/skills/learn-with-analogy.md
 - **第二步 — 类比锚定**：从日常经验找类比，建立「旧知→新知」映射表
 - **第三步 — 故事深化**：300-800 字叙事，让概念在场景中"活起来"
 - **第四步 — 类比边界**：核心要点总结 + 明确指出类比在哪些地方失效
+
+### iter-fix
+
+自动化闭环调试流程，迭代修复直到达到预期效果：
+
+- **Step 0 — 环境准备**：创建日志目录、检测 git 仓库、确认预期效果
+- **Step 1 — 阅读阶段**：通读源码、查阅改动记录和最新日志
+- **Step 2 — 修改阶段**：基于日志分析确定根因、做出最小化修改
+- **Step 3 — 构建阶段**：执行构建命令、失败则回到修改阶段
+- **Step 4 — 运行阶段**：运行程序（带超时）、收集退出码
+- **Step 5 — 验证阶段**：对比预期效果、未达到则回到阅读阶段
+- **Step 6 — 收尾**：清理调试代码、提交改动、汇报结果
 
 ---
 
