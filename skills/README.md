@@ -1,6 +1,6 @@
-# Claude Code Skills — QA 知识库 + 类比学习法
+# Claude Code Skills — QA 知识库、类比学习与迭代修复
 
-两个可分享的 Claude Code 技能（skill），安装后可在 Claude Code 对话中直接触发。
+三个可分享的 Claude Code 技能（skill），安装后可在 Claude Code 对话中直接触发。
 
 ---
 
@@ -10,7 +10,7 @@
 |------|--------|------|
 | `qa-git-track` | `/qa-git`、`记录到QA里` | 将技术问答与 git commit 绑定，通过 MkDocs + GitHub Pages 发布为可检索的知识库网站 |
 | `learn-with-analogy` | `/learn`、`用类比解释` | 用四步结构（概念前置→类比锚定→故事深化→类比边界）讲解研究生水平专业概念 |
-| `iter-fix` | `/iter-fix`、`迭代修复` | 自动化"改代码→构建→运行→查日志→分析→再改"的闭环调试流程 |
+| `iter-fix` | `/iter-fix`、`迭代修复` | 基于失败复现与可证伪假设，循环诊断、最小修复并验证到验收通过 |
 
 ---
 
@@ -19,8 +19,8 @@
 ### Linux / macOS
 
 ```bash
-git clone https://github.com/this1is1i/claude-skills.git
-cd claude-skills
+git clone https://github.com/this1is1i/this1is1i.git
+cd this1is1i/skills
 chmod +x install.sh
 ./install.sh
 ```
@@ -28,8 +28,8 @@ chmod +x install.sh
 ### Windows (PowerShell)
 
 ```powershell
-git clone https://github.com/this1is1i/claude-skills.git
-cd claude-skills
+git clone https://github.com/this1is1i/this1is1i.git
+cd this1is1i\skills
 .\install.ps1
 ```
 
@@ -82,10 +82,10 @@ Claude: [直接用 MVCC 概念，跳过领域选择，进入四步结构]
 
 ```
 用户: /iter-fix 黑洞显示正常，点击能退出
-Claude: [启动 /iter-fix 循环]
-        [第1轮] 阅读日志 → glTexImage2D 为 null → 添加回退 → 构建✅ 运行❌ 壁纸crash
-        [第2轮] 阅读日志 → ComPtr 不兼容 MinGW → 改用原生 COM → 构建✅ 运行✅
-        [完成] 共 2 轮迭代，3 个 bug 修复
+Claude: [建立修复约定：复现方式、预期行为、验收检查与范围]
+        [第1轮] 复现崩溃 → 定位 glTexImage2D 为 null → 添加回退 → 窄验证通过
+        [回归验证] 构建、运行与退出检查全部通过
+        [完成] 汇报根因、改动文件、验证命令和结果
 ```
 
 ---
@@ -134,15 +134,15 @@ rm ~/.claude/skills/iter-fix.md
 
 ### iter-fix
 
-自动化闭环调试流程，迭代修复直到达到预期效果：
+证据驱动的修复循环，以验收检查通过而不是“代码已修改”作为完成标准：
 
-- **Step 0 — 环境准备**：创建日志目录、检测 git 仓库、确认预期效果
-- **Step 1 — 阅读阶段**：通读源码、查阅改动记录和最新日志
-- **Step 2 — 修改阶段**：基于日志分析确定根因、做出最小化修改
-- **Step 3 — 构建阶段**：执行构建命令、失败则回到修改阶段
-- **Step 4 — 运行阶段**：运行程序（带超时）、收集退出码
-- **Step 5 — 验证阶段**：对比预期效果、未达到则回到阅读阶段
-- **Step 6 — 收尾**：清理调试代码、提交改动、汇报结果
+- **建立修复约定**：明确已观察到的失败、预期行为、验收检查与改动范围
+- **保护工作区**：保留既有改动，只读取和修改与故障有关的文件
+- **诊断根因**：从最窄的可靠复现出发，提出一个可证伪假设
+- **最小完整修复**：修正被破坏的约束，必要时补充经济有效的回归测试
+- **分层验证**：先运行能否证伪假设的窄检查，再执行受影响范围的回归检查
+- **明确停止条件**：验收全部通过才完成；遇到权限、外部状态或架构决策阻塞时如实停止
+- **证据化汇报**：给出根因、改动行为、实际执行的验证命令与剩余限制
 
 ---
 

@@ -27,7 +27,7 @@ Write-Host "  ✓ Learning Through Analogy（类比学习法）" -ForegroundColo
 
 Write-Host "→ 安装 iter-fix.md ..."
 Copy-Item "$ScriptDir\iter-fix.md" -Destination "$SkillsDir\" -Force
-Write-Host "  ✓ Iter-Fix（自修复迭代开发循环）" -ForegroundColor Green
+Write-Host "  ✓ Iter-Fix（证据驱动的迭代修复）" -ForegroundColor Green
 
 Write-Host ""
 Write-Host "============================================" -ForegroundColor Cyan
@@ -37,7 +37,7 @@ Write-Host ""
 Write-Host "已安装的技能:"
 Write-Host "  1. qa-git-track — QA 版本追踪 + 知识库发布"
 Write-Host "  2. learn-with-analogy — 类比学习法"
-Write-Host "  3. iter-fix — 自修复迭代开发循环"
+Write-Host "  3. iter-fix — 证据驱动的迭代修复"
 Write-Host ""
 Write-Host "使用方式:"
 Write-Host "  在 Claude Code 对话中输入 /qa-git、/learn 或 /iter-fix 即可触发"
