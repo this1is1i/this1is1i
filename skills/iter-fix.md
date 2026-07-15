@@ -1,355 +1,128 @@
-# Iter-Fix：自修复迭代开发循环
+---
+name: iter-fix
+description: Iteratively diagnose and repair an existing defect until explicit acceptance checks pass. Use when a program builds, test, runtime behavior, integration, or regression is failing and the user wants an inspect-patch-run-verify loop rather than a one-shot suggestion. Preserve unrelated work, find root causes, apply the smallest complete fix, and stop on verified success or a concrete blocker.
+---
 
-自动化"改代码 → 构建 → 运行 → 查日志 → 分析 → 再改"的闭环调试流程，直到达到预期效果为止。
+# Iter-Fix
 
-## 触发短语
+Run an evidence-driven repair loop. Treat passing validation—not editing code—as the finish line.
 
-- `/iter-fix`
-- `/iter-fix <预期效果描述>`
-- "开始自修复循环"
-- "自动调试到通过"
-- "迭代修复"
+## Establish the repair contract
 
-## 何时使用
+Before editing, state a compact contract:
 
-1. 程序能构建但运行效果不符合预期，需要多轮调参/修 bug
-2. 用户已明确预期效果，但单次修改难以一步到位
-3. 涉及多文件、多轮尝试的调试任务
-4. 需要每次改动都有记录可追溯
+- **Observed failure:** the reproducible symptom or failing command.
+- **Expected behavior:** the externally visible result that should replace it.
+- **Acceptance checks:** commands, tests, assertions, screenshots, or log conditions that can prove success.
+- **Scope:** relevant components and explicit exclusions.
 
-**不适用**：纯新增功能（无明确预期效果）、已经能正常运行不需要调试的情况。
+Derive the contract from existing evidence when it is unambiguous. Ask the user only when different interpretations would lead to materially different fixes.
 
-## 工作流程
+If the failure cannot yet be reproduced, make reproduction the first acceptance check. Do not substitute “the code looks correct” for observable evidence.
 
-```
-┌─────────────────────────────────────────────────────────┐
-│                    /iter-fix 启动                        │
-├─────────────────────────────────────────────────────────┤
-│  Step 0: 环境准备                                        │
-│    - 创建 logs/ 目录                                     │
-│    - 检测 git 仓库 → git commit / 否则 → CHANGES.md     │
-│    - 确认预期效果（用户指定 / 从对话推断）                 │
-├─────────────────────────────────────────────────────────┤
-│  Step 1: 阅读阶段                                        │
-│    - 通读全部相关源码                                     │
-│    - 查阅上次改动记录（git log -1 / CHANGES.md 末条）     │
-│    - 查阅最新日志（logs/*.log）                           │
-├─────────────────────────────────────────────────────────┤
-│  Step 2: 修改阶段                                        │
-│    - 基于日志分析确定根因                                 │
-│    - 做出最小化修改                                       │
-│    - 记录改动内容                                         │
-├─────────────────────────────────────────────────────────┤
-│  Step 3: 构建阶段                                        │
-│    - 执行构建命令                                         │
-│    - 若构建失败 → 分析错误 → 回到 Step 2                  │
-├─────────────────────────────────────────────────────────┤
-│  Step 4: 运行阶段                                        │
-│    - 运行程序（带超时）                                   │
-│    - 收集退出码                                           │
-├─────────────────────────────────────────────────────────┤
-│  Step 5: 验证阶段                                        │
-│    - 读取日志文件                                         │
-│    - 对比预期效果                                         │
-│    ├── 达到预期 → Step 6                                  │
-│    └── 未达到   → 分析差异 → 回到 Step 1                  │
-├─────────────────────────────────────────────────────────┤
-│  Step 6: 收尾                                            │
-│    - 提交最终改动（git commit / CHANGES.md）              │
-│    - 清理测试用临时代码（如有）                           │
-│    - 汇报结果                                             │
-└─────────────────────────────────────────────────────────┘
-```
+## Protect the workspace
 
-## Step 0 细节：环境准备
+Inspect repository state before modifying files.
 
-### 0.1 日志目录
+- Preserve all pre-existing changes and untracked files.
+- Do not stage, commit, discard, move, or rewrite user changes unless explicitly requested.
+- Never run blanket staging commands such as `git add -A` as part of this skill.
+- Do not create repository logs or change journals by default. Keep iteration notes in the conversation.
+- Avoid generated files and ignored paths unless the build or test workflow requires them.
+- Request approval before destructive operations, broad migrations, dependency upgrades, or changes outside the stated scope.
 
-```bash
-mkdir -p logs/
-```
+Use version control as read-only evidence unless the user separately authorizes commits.
 
-### 0.2 日志文件命名
+## Discover the project workflow
 
-```
-logs/iter-fix-{YYYY-MM-DD}_{HH-MM-SS}.log
-```
+Read only what is needed to reproduce and understand the failure:
 
-每次 `/iter-fix` 会话一个日志文件，时间戳取启动时刻。
+1. Repository instructions and the nearest applicable guidance files.
+2. Build, test, and task definitions relevant to the failing component.
+3. The failure output, stack trace, logs, recent related diff, and call path.
+4. Focused source files and tests implicated by that evidence.
 
-### 0.3 改动记录策略
+Prefer repository-defined commands over guessed language defaults. Do not scan every source file in a large repository.
 
-| 条件 | 记录方式 |
-|------|---------|
-| 当前目录是 git 仓库且有 GitHub remote | `git add -A && git commit -m "iter-fix: <简短描述>"` |
-| 是 git 仓库但无 remote | `git add -A && git commit -m "iter-fix: <简短描述>"`（本地记录）|
-| 不是 git 仓库 | 在 `logs/CHANGES.md` 末尾追加一条记录 |
+Record the exact reproduction command and its exit code or observable result.
 
-### 0.4 预期效果确认
+## Iterate
 
-- **用户指定**：`/iter-fix 黑洞显示正常，点击退出`
-- **从对话推断**：分析用户之前提出的问题，提取"应该怎样"的描述
-- **不明确时**：使用 `AskUserQuestion` 确认
+Repeat the following loop while each round produces new evidence.
 
-## Step 1 细节：阅读阶段
+### 1. Diagnose
 
-### 必须阅读的文件
+- Reproduce the failure with the narrowest reliable check.
+- Trace the failing value, state transition, or control path backward to its source.
+- Distinguish the root cause from downstream symptoms.
+- Form one falsifiable hypothesis: “Because X, Y fails; changing Z should make check C pass.”
+- Add temporary instrumentation only when existing evidence is insufficient.
 
-1. **全部源码**：项目内所有 `.cpp`、`.h`、`.py` 等源文件
-2. **构建配置**：`CMakeLists.txt`、`Makefile`、`package.json` 等
-3. **日志文件**：`logs/` 下最新的日志
-4. **改动记录**：
-   - Git：`git log --oneline -5` + `git diff HEAD~1`
-   - 手动：`logs/CHANGES.md` 末条
+Do not patch several unrelated hypotheses in one round.
 
-### 阅读输出格式
+### 2. Patch
 
-```
-## 当前状态
+- Make the smallest **complete** change that addresses the root cause.
+- Prefer correcting the violated invariant or contract over suppressing an error.
+- Add or update a regression test when the behavior can be tested economically.
+- Preserve public behavior outside the repair contract.
+- Avoid opportunistic cleanup. A necessary refactor is allowed when it reduces risk or makes the root-cause fix possible; explain why it is necessary.
 
-### 上次改动
-<git diff 或 CHANGES.md 内容>
+### 3. Verify narrowly
 
-### 最新日志
-<logs/iter-fix-*.log 内容>
+Run the fastest check that can falsify the hypothesis:
 
-### 代码关键点
-<涉及的核心文件/函数/参数>
-```
+- the new regression test;
+- the previously failing test or command;
+- a focused build or type check;
+- a deterministic runtime probe.
 
-## Step 2 细节：修改阶段
+Capture the command, exit code, and meaningful result. If it fails, use the new evidence to revise the hypothesis rather than layering on another guess.
 
-### 原则
+### 4. Verify broadly
 
-- **一次只改一个根因**
-- **修改量最小化**——优先改参数，其次改逻辑，避免重构
-- **每次修改后记录**：改了什么、为什么改、期望什么效果
+After the narrow check passes, run proportionate regression checks:
 
-### 改动记录格式
+- the affected test suite;
+- required lint, formatting, type, or build checks;
+- an end-to-end or runtime check when the bug is integration- or UI-dependent.
 
-**Git commit message**：
-```
-iter-fix: <中文简述改动>
+For GUI behavior, prefer an automated assertion or inspectable artifact. If only a human can judge the result, run all machine-checkable validations first and then request the smallest specific manual check.
 
-<英文详述>
-- Changed: <具体改动>
-- Why: <原因>
-- Expected: <预期效果>
+### 5. Clean up
+
+Remove temporary instrumentation, forced timeouts, test hooks, debug output, and generated artifacts that are not part of the final fix. Re-run any check whose behavior cleanup could affect.
+
+## Decide when to stop
+
+Finish only when all acceptance checks pass and no required cleanup remains.
+
+Stop and report a blocker when any of these conditions holds:
+
+- the next step requires credentials, unavailable hardware, external service state, or user interaction;
+- a safe fix requires a product or architecture decision with multiple materially different options;
+- the same hypothesis class fails twice without new evidence;
+- three consecutive rounds make no measurable progress;
+- continuing would require expanding scope or taking destructive action without authorization.
+
+Do not use an arbitrary iteration count as proof that the problem is unsolvable.
+
+## Report progress
+
+Keep intermediate updates compact:
+
+```text
+Round N — hypothesis: ...
+Evidence: command/result ...
+Change: file/behavior ...
+Status: narrow check pass|fail; next evidence sought ...
 ```
 
-**CHANGES.md 条目**：
-```markdown
-## [iter-fix] 2026-07-01 14:30
+In the final response, lead with the verified outcome and include:
 
-- **Changed**: MAX_RADIUS 0.18 → 0.10
-- **Why**: 用户要求黑洞占屏30%
-- **Expected**: 光子阴影约占屏宽26%
-```
+- root cause in one sentence;
+- changed files or behaviors;
+- exact validation commands and results;
+- remaining limitations or manual checks, if any.
 
-## Step 3-4 细节：构建与运行
-
-### 语言构建命令映射
-
-| 语言 | 构建命令 | 运行命令 |
-|------|---------|---------|
-| C++ (CMake) | `cmake --build build --config Release` | `./build/Release/<name>.exe` 或 `timeout 10 ./build/<name>` |
-| C++ (MSVC) | `msbuild <name>.sln /p:Configuration=Release` | 同上 |
-| Python | (无需构建) | `python main.py` |
-| Rust | `cargo build --release` | `cargo run --release` |
-| Go | `go build` | `./<binary>` |
-| Node.js | (无需构建) | `node index.js` |
-
-### 运行超时
-
-- **GUI 程序**：5-15 秒（足够看到效果）
-- **CLI 程序**：按实际需要
-- **Web 服务**：启动后等待 3 秒，curl 测试，然后 kill
-
-### 临时退出机制
-
-对于 GUI 程序，在调试阶段添加临时自动退出（如 15 秒超时）以便自动化测试。达到预期效果后移除。
-
-## Step 5 细节：验证阶段
-
-### 验证检查表
-
-- [ ] 程序是否正常启动？（无 segfault、无异常退出）
-- [ ] 是否达到核心预期效果？（用户描述的"应该看到 X"）
-- [ ] 是否有回归？（之前修复过的问题是否重现）
-- [ ] 日志中是否有新的错误或警告？
-- [ ] 退出是否正常？（非崩溃退出）
-
-### 判断标准
-
-| 情况 | 判断 |
-|------|------|
-| 日志显示完整生命周期 + 核心效果达成 | ✅ 达到预期 |
-| 日志显示崩溃/错误 + 效果未达成 | ❌ 继续迭代 |
-| 日志显示正常运行 + 但效果参数不对 | ❌ 调整参数继续 |
-| 日志显示正常运行 + 效果达成但有测试代码残留 | 清理后完成 |
-
-## Step 6 细节：收尾
-
-### 清理检查表
-
-- [ ] 移除调试用自动退出（如有）
-- [ ] 移除调试用日志输出（如有额外 verbose 日志）
-- [ ] 移除注释掉的旧代码
-- [ ] 确认退出条件符合用户要求
-- [ ] 最终构建通过
-- [ ] 最终运行验证通过
-
-### 最终报告格式
-
-```
-## 迭代修复完成
-
-### 问题根因
-<一句话总结>
-
-### 修复轮次
-| # | 改动 | 结果 |
-|---|------|------|
-| 1 | ... | ... |
-| N | ... | ✅ |
-
-### 最终状态
-<当前效果描述>
-```
-
-## 日志规范
-
-### 日志写入代码模板
-
-**C++**：
-```cpp
-#include <cstdio>
-#include <cstdarg>
-#include <windows.h>
-
-static void iter_log(const char* fmt, ...) {
-    char buf[512];
-    va_list ap;
-    va_start(ap, fmt);
-    vsnprintf(buf, sizeof(buf), fmt, ap);
-    va_end(ap);
-    FILE* f = fopen("logs/iter-fix.log", "a");
-    if (f) { fprintf(f, "[%lu] %s\n", GetTickCount(), buf); fclose(f); }
-}
-```
-
-**Python**：
-```python
-import logging
-logging.basicConfig(
-    filename='logs/iter-fix.log',
-    level=logging.DEBUG,
-    format='%(asctime)s %(message)s'
-)
-```
-
-### 日志内容要求
-
-- **生命周期节点**：启动、初始化完成、进入主循环、退出
-- **关键变量值**：配置参数、状态标记、错误码
-- **异常/崩溃**：错误码、调用栈（如有）
-- **性能指标**（可选）：帧率、内存、耗时
-
-### 日志写入时机
-
-**在每个关键操作前后各写一条**：
-```
-[启动] 程序启动
-[窗口] 窗口创建成功 1920x1080
-[GL]   OpenGL context 创建成功
-[渲染] 渲染器初始化
-[循环] 进入主循环
-[帧1]  首帧渲染完成 elapsed=0.01s
-[退出] 正常退出
-```
-
-如果在某一步之间崩溃，日志会精确显示卡在哪里。
-
-## 与 Git 的集成
-
-### 自动 commit 规范
-
-每次代码修改后，在 Step 3 构建前自动 commit：
-
-```bash
-git add -A
-git commit -m "iter-fix: <中文简述>" -m "<英文详述>"
-```
-
-- **中文简述** ≤ 50 字符
-- **英文详述** 包含 Changed / Why / Expected 三部分
-
-### 无 Git 时的替代
-
-```markdown
-# logs/CHANGES.md
-
-## [iter-fix] 2026-07-01 14:30:00
-- Changed: ...
-- Why: ...
-- Expected: ...
-
-## [iter-fix] 2026-07-01 14:32:00
-- Changed: ...
-- Why: ...
-- Expected: ...
-```
-
-## 安全原则
-
-- **不修改 `.gitignore`** 中已忽略的文件
-- **不删除用户数据**（`logs/` 目录仅追加）
-- **不改动不相关的代码**（改动范围仅限问题相关文件）
-- **实验性改动**：如果用户未明确授权大范围修改，先询问
-
-## 与用户交互的时机
-
-只在以下情况中断循环询问用户：
-
-1. **预期效果不明确**（Step 0）
-2. **需要用户手动操作**（如"请点击运行弹窗中的 OK 按钮"）
-3. **多个可行的修复方向，无法自动判断最优解**
-4. **15 轮迭代仍未达到预期**（避免死循环）
-
-其他情况全程自动运行，每轮输出简短进度。
-
-## 示例对话
-
-```
-用户: /iter-fix 黑洞显示正常，点击能退出
-
-Claude: 
-## /iter-fix 启动
-
-**预期效果**: 黑洞显示正常，点击能退出
-**环境**: CMake + C++17 + MinGW
-**日志**: logs/iter-fix-2026-07-01_15-30-00.log
-**改动记录**: git (repo detected)
-
-### 第 1 轮
-[阅读阶段] → glTexImage2D 为 null → crash
-[修改阶段] → 添加 GetProcAddress 回退
-[构建阶段] → ✅
-[运行阶段] → 启动成功，3s 后自动退出
-[验证阶段] → ❌ 壁纸加载 crash
-
-### 第 2 轮
-[阅读阶段] → ComPtr 不兼容 MinGW
-[修改阶段] → 改用原生 COM
-[构建阶段] → ✅
-[运行阶段] → ✅ 全流程 459 帧 @ 153fps
-[验证阶段] → ✅ 黑洞显示正常，退出正常
-
-## /iter-fix 完成
-共 2 轮迭代，3 个 bug 修复，最终效果符合预期。
-```
-
-## 参考
-
-- `record-qa.md` — QA 记录技能，与本技能的日志规范互补
-- `qa-git-track.md` — QA 版本追踪，本技能的 git commit 格式与之兼容
+Never claim success from an unexecuted check, stale output, or inference alone.
