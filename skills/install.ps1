@@ -23,7 +23,7 @@ Write-Host "  ✓ QA Git-Tracked Knowledge Base" -ForegroundColor Green
 
 Write-Host "→ 安装 learn-with-analogy.md ..."
 Copy-Item "$ScriptDir\learn-with-analogy.md" -Destination "$SkillsDir\" -Force
-Write-Host "  ✓ Learning Through Analogy（类比学习法）" -ForegroundColor Green
+Write-Host "  ✓ Learn with Analogy（结构映射与精确模型）" -ForegroundColor Green
 
 Write-Host "→ 安装 iter-fix.md ..."
 Copy-Item "$ScriptDir\iter-fix.md" -Destination "$SkillsDir\" -Force
@@ -36,7 +36,7 @@ Write-Host "============================================" -ForegroundColor Cyan
 Write-Host ""
 Write-Host "已安装的技能:"
 Write-Host "  1. qa-git-track — QA 版本追踪 + 知识库发布"
-Write-Host "  2. learn-with-analogy — 类比学习法"
+Write-Host "  2. learn-with-analogy — 结构映射与精确模型"
 Write-Host "  3. iter-fix — 证据驱动的迭代修复"
 Write-Host ""
 Write-Host "使用方式:"
