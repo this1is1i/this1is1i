@@ -1,0 +1,25 @@
+# Backend
+backend/target/
+backend/.m2-repository/
+
+# Frontend
+frontend/node_modules/
+frontend/dist/
+frontend/coverage/
+
+# IDE
+.idea/
+.vscode/
+*.iml
+
+# Runtime data and task worktrees
+.runtime/
+.worktrees/
+
+# Imported sample repositories keep their own Git metadata locally.
+samples/workspaces/
+
+# Secrets
+.env
+.env.*
+!.env.example

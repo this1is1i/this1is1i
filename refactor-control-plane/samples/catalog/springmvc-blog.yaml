@@ -1,0 +1,15 @@
+id: springmvc-blog
+purpose: legacy-refactoring-acceptance-fixture
+source: https://github.com/eyupgevenim/SpringMvcBlog.git
+commit: 5e62608af333b5757bf767e05b19e2b0d56f0afb
+license: MIT
+workspace: ../workspaces/springmvc-blog
+runtime_network_access: forbidden
+expected_stack:
+  java: "7"
+  spring_framework: "4.1.0.RELEASE"
+  frontend:
+    - JSP
+    - jQuery 2.2.0
+    - Bootstrap 3.3.6
+  database: MySQL 5.6
