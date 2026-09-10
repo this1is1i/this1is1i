@@ -1,0 +1,4 @@
+interface:
+  display_name: "Recover Slow Downloads"
+  short_description: "Diagnose stalled downloads and choose safe mirrors"
+  default_prompt: "Use $recover-slow-downloads to diagnose this stalled download and select a safe resumable alternative."
