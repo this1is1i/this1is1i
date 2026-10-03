@@ -13,6 +13,41 @@ import java.util.concurrent.TimeUnit;
 
 public final class GitWorktreeManager {
 
+    public synchronized TaskWorktree createExecution(Path repository, String baseCommit, String taskId,
+            String executionId, Path root) {
+        if (!executionId.matches("[a-zA-Z0-9-]{1,100}")) throw new IllegalArgumentException("Invalid execution ID");
+        TaskWorktree created = createExecutions(repository, baseCommit, List.of(taskId + "-" + executionId), root).getFirst();
+        return new TaskWorktree(taskId, executionId, created.branch(), created.path(), created.baseCommit());
+    }
+
+    public synchronized List<String> verifiedChangedPaths(Path repository, TaskWorktree execution, String commitSha) {
+        if (commitSha == null || !commitSha.matches("[0-9a-fA-F]{40}")) {
+            throw new IllegalArgumentException("A full commit SHA is required");
+        }
+        requireRepositoryIdentity(repository, execution.path());
+        String branch = git(execution.path(), "branch", "--show-current").output();
+        if (!execution.branch().equals(branch)) throw new IllegalStateException("Execution branch changed");
+        String head = git(repository, "rev-parse", "refs/heads/" + execution.branch()).output();
+        if (!head.equalsIgnoreCase(commitSha)) throw new IllegalStateException("Submission must equal the execution branch HEAD");
+        if (gitAllowFailure(repository, "merge-base", "--is-ancestor", execution.baseCommit(), head).exitCode() != 0) {
+            throw new IllegalStateException("Execution commit does not descend from its bound base");
+        }
+        CommandResult diff = gitRaw(repository, "diff", "--no-ext-diff", "--no-renames", "--name-only", "-z",
+                execution.baseCommit(), head, "--");
+        if (diff.exitCode() != 0) throw new IllegalStateException("Cannot inspect execution diff");
+        return java.util.Arrays.stream(diff.output().split("\u0000")).filter(value -> !value.isEmpty()).toList();
+    }
+
+    private static void requireRepositoryIdentity(Path source, Path worktree) {
+        try {
+            Path expected = Path.of(git(source, "rev-parse", "--path-format=absolute", "--git-common-dir").output()).toRealPath();
+            Path actual = Path.of(git(worktree, "rev-parse", "--path-format=absolute", "--git-common-dir").output()).toRealPath();
+            if (!expected.equals(actual)) throw new IllegalStateException("Worktree belongs to another repository");
+        } catch (IOException exception) {
+            throw new IllegalStateException("Cannot verify worktree repository identity", exception);
+        }
+    }
+
     public synchronized List<TaskWorktree> createExecutions(
             Path repository,
             String baseCommit,
@@ -54,6 +89,7 @@ public final class GitWorktreeManager {
         String baseConfigKey = "branch." + branch + ".refactor-base";
 
         if (Files.exists(path)) {
+            requireRepositoryIdentity(repo, path);
             String actualBranch = git(path, "branch", "--show-current").output();
             if (!branch.equals(actualBranch)) {
                 throw new IllegalStateException("Existing worktree uses branch " + actualBranch + ", expected " + branch);
@@ -114,25 +150,44 @@ public final class GitWorktreeManager {
     }
 
     private static CommandResult gitAllowFailure(Path directory, String... arguments) {
+        CommandResult result = gitRaw(directory, arguments);
+        return new CommandResult(result.exitCode(), result.output().trim());
+    }
+
+    private static CommandResult gitRaw(Path directory, String... arguments) {
         List<String> command = new ArrayList<>();
         command.add("git");
         command.addAll(List.of(arguments));
         ProcessBuilder builder = new ProcessBuilder(command)
                 .directory(directory.toFile())
                 .redirectErrorStream(true);
+        Process process = null;
         try {
-            Process process = builder.start();
+            process = builder.start();
+            Process running = process;
+            var outputTask = new java.util.concurrent.FutureTask<byte[]>(() -> running.getInputStream().readAllBytes());
+            Thread.ofVirtual().start(outputTask);
             if (!process.waitFor(20, TimeUnit.SECONDS)) {
-                process.destroyForcibly();
                 throw new IllegalStateException("Git command timed out: " + String.join(" ", command));
             }
-            String output = new String(process.getInputStream().readAllBytes(), StandardCharsets.UTF_8).trim();
+            String output = StandardCharsets.UTF_8.newDecoder()
+                    .onMalformedInput(java.nio.charset.CodingErrorAction.REPORT)
+                    .decode(java.nio.ByteBuffer.wrap(outputTask.get(5, TimeUnit.SECONDS))).toString();
             return new CommandResult(process.exitValue(), output);
         } catch (IOException exception) {
             throw new IllegalStateException("Cannot execute Git", exception);
+        } catch (java.util.concurrent.ExecutionException | java.util.concurrent.TimeoutException exception) {
+            throw new IllegalStateException("Cannot drain Git command output", exception);
         } catch (InterruptedException exception) {
             Thread.currentThread().interrupt();
             throw new IllegalStateException("Interrupted while executing Git", exception);
+        } finally {
+            if (process != null && process.isAlive()) {
+                process.descendants().forEach(ProcessHandle::destroyForcibly);
+                process.destroyForcibly();
+                try { process.waitFor(5, TimeUnit.SECONDS); }
+                catch (InterruptedException exception) { Thread.currentThread().interrupt(); }
+            }
         }
     }
 

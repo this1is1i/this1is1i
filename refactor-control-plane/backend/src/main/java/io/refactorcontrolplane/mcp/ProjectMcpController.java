@@ -80,7 +80,10 @@ public class ProjectMcpController {
                     "structuredContent", structured));
         } catch (SecurityException exception) {
             return error(request.id(), -32002, exception.getMessage());
-        } catch (IllegalArgumentException | IllegalStateException exception) {
+        } catch (IllegalArgumentException | IllegalStateException
+                | io.refactorcontrolplane.ownership.LeaseNotFoundException
+                | io.refactorcontrolplane.ownership.LeaseOwnerMismatchException
+                | io.refactorcontrolplane.ownership.LeaseVersionConflictException exception) {
             return error(request.id(), -32003, exception.getMessage());
         }
     }
@@ -89,7 +92,27 @@ public class ProjectMcpController {
      * The v0.1 runtime is intentionally single-node. Serializing record -> domain write ->
      * completion makes the database-generated journal sequence the actual execution order.
      */
-    private synchronized Object execute(String name, JsonNode arguments) {
+    private Object execute(String name, JsonNode arguments) {
+        synchronized (runtime) {
+            return executeLocked(name, arguments);
+        }
+    }
+
+    public Object operatorCommand(io.refactorcontrolplane.governance.LocalIdentityRegistry.Principal principal,
+            String action, JsonNode input) {
+        if (!principal.projectId().equals(projectService.overview().projectId())) {
+            throw new SecurityException("Principal is not authorized for this project");
+        }
+        var arguments = (com.fasterxml.jackson.databind.node.ObjectNode) input.deepCopy();
+        arguments.put("actorSubject", principal.subjectId());
+        var roles = arguments.putArray("actorRoles");
+        principal.roles().stream().map(Enum::name).sorted().forEach(roles::add);
+        arguments.put("taskToken", runtime.assignmentToken(input.path("taskId").asText()));
+        if (!validWriteEnvelope(arguments)) throw new IllegalArgumentException("Command requires idempotencyKey and expectedVersion");
+        return execute("operator:" + action, arguments);
+    }
+
+    private Object executeLocked(String name, JsonNode arguments) {
         DemoProjectOverview overview = projectService.overview();
         return switch (name) {
             case "get_project_context" -> overview;
@@ -100,6 +123,9 @@ public class ProjectMcpController {
             case "get_integration_status" -> runtime.integrationStatus();
             default -> {
                 runtime.validateToken(arguments);
+                if (arguments.properties().stream().anyMatch(field -> field.getKey().startsWith("_"))) {
+                    throw new SecurityException("Reserved journal fields cannot be supplied by clients");
+                }
                 String key = arguments.path("idempotencyKey").asText();
                 String taskId = arguments.path("taskId").asText("unknown-task");
                 long expectedVersion = arguments.path("expectedVersion").asLong();
@@ -108,7 +134,7 @@ public class ProjectMcpController {
                 if (existing.isPresent()) {
                     var event = existing.get();
                     if (!event.taskId().equals(taskId) || !event.eventType().equals(name)
-                            || !event.payload().equals(payload)) {
+                            || !auditPayload(name, readJson(event.payload())).equals(payload)) {
                         throw new IllegalStateException("Idempotency key was already used for another operation");
                     }
                     if (!event.status().equals("COMPLETED")) {
@@ -117,21 +143,53 @@ public class ProjectMcpController {
                     if (event.result() == null) {
                         throw new IllegalStateException("Completed operation has no persisted result");
                     }
-                    yield readJson(event.result());
+                    JsonNode stored = readJson(event.result());
+                    yield stored.path("journalVersion").asInt() == 2 ? stored.path("response") : stored;
                 }
-                if (!auditEvents.record(key, taskId, name, payload, expectedVersion)) {
-                    throw new IllegalStateException("Concurrent idempotency conflict");
-                }
-                Object result;
+                var prepared = runtime.prepareWrite(name, arguments);
+                var journalArguments = (com.fasterxml.jackson.databind.node.ObjectNode) prepared.deepCopy();
+                journalArguments.remove("taskToken");
+                String persistedPayload = writeJson(journalArguments);
                 try {
-                    result = runtime.execute(name, arguments);
+                    if (!auditEvents.record(key, taskId, name, persistedPayload, expectedVersion)) {
+                        throw new IllegalStateException("Concurrent idempotency conflict");
+                    }
                 } catch (RuntimeException exception) {
-                    auditEvents.fail(key, expectedVersion);
+                    runtime.requireReconciliation();
                     throw exception;
                 }
-                if (!auditEvents.complete(key, expectedVersion, writeJson(result))) {
-                    throw new IllegalStateException("Audit operation version changed before completion");
+                Object result;
+                McpProjectRuntime.Projection before = runtime.snapshot();
+                try {
+                    result = runtime.execute(name, prepared);
+                } catch (RuntimeException exception) {
+                    runtime.restore(before);
+                    if (exception instanceof McpProjectRuntime.ReconciliationRequiredException) {
+                        runtime.requireReconciliation();
+                    } else {
+                        try {
+                            if (!auditEvents.fail(key, expectedVersion)) runtime.requireReconciliation();
+                        } catch (RuntimeException journalFailure) {
+                            runtime.requireReconciliation();
+                            exception.addSuppressed(journalFailure);
+                        }
+                    }
+                    throw exception;
                 }
+                var after = runtime.snapshot();
+                String storedResult;
+                try { storedResult = writeJson(runtime.journalResult(result)); }
+                catch (RuntimeException exception) { runtime.requireReconciliation(); throw exception; }
+                finally { runtime.restore(before); }
+                try {
+                    if (!auditEvents.complete(key, expectedVersion, storedResult)) {
+                        throw new IllegalStateException("Audit operation version changed before completion");
+                    }
+                } catch (RuntimeException exception) {
+                    runtime.requireReconciliation();
+                    throw exception;
+                }
+                runtime.restore(after);
                 yield result;
             }
         };
@@ -141,7 +199,7 @@ public class ProjectMcpController {
         Map<String, JsonNode> payload = new TreeMap<>();
         payload.put("tool", mapper.getNodeFactory().textNode(toolName));
         arguments.properties().forEach(field -> {
-            if (!field.getKey().equals("taskToken")) payload.put(field.getKey(), field.getValue());
+            if (!field.getKey().equals("taskToken") && !field.getKey().startsWith("_")) payload.put(field.getKey(), field.getValue());
         });
         return writeJson(payload);
     }

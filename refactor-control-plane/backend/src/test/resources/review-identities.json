@@ -1,0 +1,8 @@
+[
+  {"subjectId":"manager","projectId":"legacy-blog","roles":["PROJECT_MANAGER"],"tokenSha256":"3f942af8a46d73fb3275cef9f5132ce00974fb6b97ad7c88143bf0c108341390"},
+  {"subjectId":"developer","projectId":"legacy-blog","roles":["DEVELOPER","ENGINEERING_LEAD"],"tokenSha256":"097bac31b446ce71105d17b0f2f882d1988dea802d5ca2910d4d9ba4036d42a4"},
+  {"subjectId":"lead","projectId":"legacy-blog","roles":["ENGINEERING_LEAD"],"tokenSha256":"e48d59a89db43a4eb8d27bfe22cc6c6ee03dee4fc552368d654114d5e7f606c2"},
+  {"subjectId":"qa","projectId":"legacy-blog","roles":["QA_LEAD"],"tokenSha256":"57c74558396b1ae64e3c7da3824f6df8e6709c1ce83ee5bfe75915d704b44e1e"},
+  {"subjectId":"business","projectId":"legacy-blog","roles":["BUSINESS_APPROVER"],"tokenSha256":"5e3a9a7123be86bc7b3dd1b7c9150c550eaaa7f9e8545d888c28c96a548f84ad"},
+  {"subjectId":"architect","projectId":"legacy-blog","roles":["ARCHITECT"],"tokenSha256":"b0f4daf38b6af4aa9664377c202a36fbb53dd199309d4b13890f34dcef8f6f1e"}
+]

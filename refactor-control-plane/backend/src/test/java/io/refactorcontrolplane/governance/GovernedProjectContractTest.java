@@ -66,6 +66,53 @@ class GovernedProjectContractTest {
     }
 
     @Test
+    void invalidSemanticPublicationDoesNotPartiallyChangeStateOrConsumeItsKey() {
+        var affected = new java.util.LinkedHashSet<>(List.of("WP-API", "missing-task"));
+        assertThrows(IllegalArgumentException.class, () -> project.publishSemanticChange(
+                SemanticAsset.API_CONTRACT, 2, affected, "atomic-publication"));
+
+        assertEquals(1, project.contextVersion());
+        assertEquals(WorkPackageStatus.RUNNING, project.task("WP-API").status());
+        assertEquals(1, project.events().size());
+
+        project.publishSemanticChange(SemanticAsset.API_CONTRACT, 2, Set.of("WP-API"), "atomic-publication");
+        assertEquals(2, project.contextVersion());
+        assertEquals(WorkPackageStatus.STALE, project.task("WP-API").status());
+    }
+
+    @Test
+    void acceptedButUnmergedWorkLosesMergeEligibilityWhenItsContractChanges() {
+        project.task("WP-API").moveTo(WorkPackageStatus.SUBMITTED);
+        project.task("WP-API").moveTo(WorkPackageStatus.CODE_REVIEW);
+        project.recordGate("WP-API", QualityGate.CODE_REVIEW, true, ProjectRole.ENGINEERING_LEAD, "review");
+        project.task("WP-API").moveTo(WorkPackageStatus.TESTING);
+        project.recordGate("WP-API", QualityGate.UNIT_TEST, true, ProjectRole.QA_LEAD, "unit");
+        project.recordGate("WP-API", QualityGate.INTEGRATION_TEST, true, ProjectRole.QA_LEAD, "integration");
+        project.recordGate("WP-API", QualityGate.BUSINESS_ACCEPTANCE, true,
+                ProjectRole.BUSINESS_APPROVER, "business");
+        project.acceptTask("WP-API");
+
+        project.publishSemanticChange(SemanticAsset.API_CONTRACT, 2, Set.of("WP-API"), "breaking");
+
+        assertThrows(GateNotSatisfiedException.class, () -> project.createManualMergeProposal(
+                "WP-API", "codex/task-wp-api", "deadbeef"));
+        assertEquals(WorkPackageStatus.ACCEPTED, project.task("WP-API").status(),
+                "historical acceptance remains immutable; current merge eligibility is revoked");
+        assertTrue(project.events().stream().anyMatch(event -> event.type().equals("TaskInvalidated")));
+    }
+
+    @Test
+    void changingOnlyStatusCannotMakeAnOldTaskPackageCurrentAgain() {
+        project.publishSemanticChange(SemanticAsset.API_CONTRACT, 2, Set.of("WP-API"), "invalidate");
+        project.task("WP-API").moveTo(WorkPackageStatus.READY);
+        project.task("WP-API").moveTo(WorkPackageStatus.CLAIMED);
+        project.task("WP-API").moveTo(WorkPackageStatus.RUNNING);
+
+        assertThrows(IllegalStateException.class, () -> project.submitChangeset(
+                "WP-API", List.of("backend/src/main/ArticleController.java"), "old-input"));
+    }
+
+    @Test
     void forbiddenPathOverridesAnAllowedParentPath() {
         SubmissionResult result = project.submitChangeset(
                 "WP-API",

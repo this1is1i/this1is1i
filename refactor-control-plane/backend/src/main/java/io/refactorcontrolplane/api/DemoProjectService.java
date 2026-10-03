@@ -11,11 +11,15 @@ import org.springframework.stereotype.Service;
 public class DemoProjectService {
 
     private final LegacyProjectReport analysis;
+    private final Path repository;
 
     public DemoProjectService(
             @Value("${control-plane.demo.repository:../samples/workspaces/springmvc-blog}") String repository) {
-        this.analysis = new LegacyProjectAnalyzer().analyze(Path.of(repository));
+        this.repository = Path.of(repository).toAbsolutePath().normalize();
+        this.analysis = new LegacyProjectAnalyzer().analyze(this.repository);
     }
+
+    public Path repository() { return repository; }
 
     public DemoProjectOverview overview() {
         return new DemoProjectOverview(

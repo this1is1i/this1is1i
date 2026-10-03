@@ -58,6 +58,21 @@ public final class TaskPackage {
     public List<String> acceptanceCommands() { return acceptanceCommands; }
     public synchronized WorkPackageStatus status() { return status; }
 
+    public synchronized Snapshot snapshot() {
+        return new Snapshot(id, baseCommit, contextVersion, contractVersion, schemaVersion, adrVersion,
+                allowedPaths, forbiddenPaths, workingDirectory, acceptanceCommands, status);
+    }
+
+    public static TaskPackage from(Snapshot value) {
+        return new TaskPackage(value.id(), value.baseCommit(), value.contextVersion(), value.contractVersion(),
+                value.schemaVersion(), value.adrVersion(), value.allowedPaths(), value.forbiddenPaths(),
+                value.workingDirectory(), value.acceptanceCommands(), value.status());
+    }
+
+    public record Snapshot(String id, String baseCommit, long contextVersion, long contractVersion,
+            long schemaVersion, long adrVersion, Set<String> allowedPaths, Set<String> forbiddenPaths,
+            String workingDirectory, List<String> acceptanceCommands, WorkPackageStatus status) {}
+
     private static String requireText(String value, String field) {
         if (value == null || value.isBlank()) throw new IllegalArgumentException(field + " must not be blank");
         return value;

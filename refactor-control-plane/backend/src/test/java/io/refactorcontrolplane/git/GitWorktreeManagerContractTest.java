@@ -18,6 +18,28 @@ class GitWorktreeManagerContractTest {
     Path tempDir;
 
     @Test
+    void verifiesDiffsLargerThanTheProcessOutputPipe() throws Exception {
+        Path repository = tempDir.resolve("large-repository");
+        Files.createDirectories(repository);
+        git(repository, "init", "-b", "main");
+        git(repository, "config", "user.email", "control-plane@example.invalid");
+        git(repository, "config", "user.name", "Control Plane Test");
+        Files.writeString(repository.resolve("README.md"), "fixture", StandardCharsets.UTF_8);
+        git(repository, "add", "."); git(repository, "commit", "-m", "fixture");
+        String base = git(repository, "rev-parse", "HEAD");
+        var manager = new GitWorktreeManager();
+        TaskWorktree execution = manager.createExecution(repository, base, "WP-100", "large-diff", tempDir.resolve("large-worktrees"));
+        for (int index = 0; index < 800; index++) {
+            Files.writeString(execution.path().resolve("file-" + index + "-" + "x".repeat(90) + ".txt"),
+                    "content", StandardCharsets.UTF_8);
+        }
+        git(execution.path(), "add", "."); git(execution.path(), "commit", "-m", "large diff");
+        assertEquals(800, manager.verifiedChangedPaths(repository, execution,
+                git(execution.path(), "rev-parse", "HEAD")).size());
+        assertEquals(base, git(repository, "rev-parse", "main"));
+    }
+
+    @Test
     void createsThreeIsolatedTaskBranchesIdempotentlyWithoutMovingMain() throws Exception {
         Path repository = tempDir.resolve("repository");
         Files.createDirectories(repository);

@@ -51,8 +51,14 @@ Git 引用和平台数据库无法共享单一事务，因此采用可恢复提�
 - Git 引用更新使用预期旧 SHA 的 compare-and-swap。
 - 首个外部可见写入前保存待恢复操作记录。
 - 每一步后重新读取实际状态，而不是依赖调用返回值推断。
-- 通过 outbox 发布 Change Event，并由 reconciliation worker 对账。
+- 目标架构通过 outbox 发布 Change Event 并由 worker 对账；当前单节点版本使用持久化结果投影和启动对账，不声称已实现后台 worker。
 - 后续步骤失败时，不回退已由其他执行者推进的共享引用。
+
+### 当前实现的提交边界
+
+单节点控制器在同一 runtime 锁内持久化 PENDING、执行领域操作、序列化版本 2 结果投影，再完成 journal 条件更新。完成成功前恢复旧内存投影，成功后发布新投影；数据库或序列化结果不确定时停止后续写入。恢复 COMPLETED 只还原事实，PENDING 按预先保存的 execution ID / base commit 对账，不重新生成执行身份。
+
+旧日志没有可信审批主体与 Git 绑定，恢复历史状态但标记未验证；新命令校验不反向应用于已完成的旧语义版本记录。详情与边界见[治理操作说明](../governance-operations.md)。
 
 ## 5. Integration AI 权限边界
 
