@@ -17,7 +17,7 @@ class LegacyAnalysisAndPlanContractTest {
 
         assertEquals("5e62608af333b5757bf767e05b19e2b0d56f0afb", report.snapshotCommit());
         assertTrue(report.technologyStack().contains("Java 7"));
-        assertTrue(report.technologyStack().contains("Spring MVC 4.1"));
+        assertTrue(report.technologyStack().contains("Spring MVC 4.1.0.RELEASE"));
         assertTrue(report.technologyStack().contains("JSP"));
         assertTrue(report.modules().stream().anyMatch(module -> module.name().equals("Controllers")));
         assertTrue(report.evidence().stream().allMatch(evidence -> !evidence.path().isBlank()));

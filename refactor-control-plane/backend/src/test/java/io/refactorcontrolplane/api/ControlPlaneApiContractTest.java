@@ -37,7 +37,11 @@ class ControlPlaneApiContractTest {
                 .andExpect(jsonPath("$.projectId").value("legacy-blog"))
                 .andExpect(jsonPath("$.analysis.snapshotCommit")
                         .value("5e62608af333b5757bf767e05b19e2b0d56f0afb"))
-                .andExpect(jsonPath("$.analysis.evidence.length()").value(4))
+                .andExpect(jsonPath("$.analysis.evidence.length()").value(org.hamcrest.Matchers.greaterThan(4)))
+                .andExpect(jsonPath("$.analysis.evidence[0].snapshotCommit")
+                        .value("5e62608af333b5757bf767e05b19e2b0d56f0afb"))
+                .andExpect(jsonPath("$.analysis.evidence[0].blobId").value(org.hamcrest.Matchers.matchesPattern("[0-9a-f]{40}")))
+                .andExpect(jsonPath("$.analysis.findings[0].kind").isNotEmpty())
                 .andExpect(jsonPath("$.plan.workPackages.length()").value(7))
                 .andExpect(jsonPath("$.mergePolicy").value("HUMAN_ONLY"));
     }
