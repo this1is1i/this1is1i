@@ -20,7 +20,8 @@ import org.springframework.jdbc.datasource.embedded.*;
 
 class GitExecutionWorkflowContractTest {
     @TempDir Path directory;
-    final ObjectMapper mapper = new ObjectMapper().findAndRegisterModules();
+    final ObjectMapper mapper = new ObjectMapper().findAndRegisterModules()
+            .disable(com.fasterxml.jackson.databind.SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
 
     @Test
     void rejectedReviewCanStartANewExecutionWithoutDiscardingThePreviousWorktree() throws Exception {
@@ -223,8 +224,11 @@ class GitExecutionWorkflowContractTest {
                 .put("expectedVersion", runtime.contextVersion()).put("idempotencyKey", key);
         ObjectNode params = mapper.createObjectNode().put("name", name);
         params.set("arguments", arguments);
-        return mapper.valueToTree(controller.handle(new McpRequest(
+        JsonNode response = mapper.valueToTree(controller.handle(new McpRequest(
                 "2.0", mapper.getNodeFactory().numberNode(1), "tools/call", params)).getBody());
+        if (response.has("result")) McpToolSchemas.validate(mapper.valueToTree(McpToolSchemas.output(name)),
+                response.path("result").path("structuredContent"), name);
+        return response;
     }
 
     static void commit(Path repo, String message) throws Exception {

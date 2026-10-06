@@ -51,6 +51,50 @@ public class McpProjectRuntime {
     private final GitWorktreeManager git = new GitWorktreeManager();
     private final Map<String, Execution> executions = new LinkedHashMap<>();
     private final Map<String, String> assignmentOwners = new LinkedHashMap<>();
+    private java.util.function.Consumer<String> integrationMergeGuard = taskId -> {};
+
+    public synchronized void integrationMergeGuard(java.util.function.Consumer<String> guard) {
+        integrationMergeGuard = guard;
+    }
+
+    public record IntegrationInput(String taskId, String owner, Execution execution, long contextVersion,
+            long contractVersion, long schemaVersion, long adrVersion, List<String> dependencies) {}
+
+    /** Captures authoritative, submitted executions in deterministic dependency order. */
+    public synchronized List<IntegrationInput> integrationInputs(List<String> requested) {
+        if (reconciliationRequired) throw new IllegalStateException("Operation journal requires reconciliation");
+        if (requested == null || requested.isEmpty() || requested.size() > 20
+                || new java.util.HashSet<>(requested).size() != requested.size())
+            throw new IllegalArgumentException("Supply 1 to 20 distinct task IDs");
+        var pending = new java.util.TreeSet<>(requested);
+        var ordered = new java.util.ArrayList<IntegrationInput>();
+        while (!pending.isEmpty()) {
+            String next = pending.stream().filter(id -> dependencies.getOrDefault(id, Set.of()).stream()
+                    .noneMatch(pending::contains)).findFirst().orElseThrow(() -> new IllegalStateException("Cyclic task dependencies"));
+            TaskPackage task = project.task(next);
+            if (!project.currentlyValid(next) || !Set.of(WorkPackageStatus.SUBMITTED, WorkPackageStatus.CODE_REVIEW,
+                    WorkPackageStatus.TESTING, WorkPackageStatus.ACCEPTED).contains(task.status()))
+                throw new IllegalStateException("Integration requires a valid submitted task: " + next);
+            for (String prerequisite : dependencies.getOrDefault(next, Set.of())) {
+                if (!requested.contains(prerequisite))
+                    throw new IllegalStateException("Include the complete dependency closure; missing prerequisite: " + prerequisite);
+            }
+            Execution execution = executions.get(next);
+            if (execution == null || execution.commitSha() == null) throw new IllegalStateException("Missing submitted execution");
+            git.verifiedChangedPaths(repository, execution.worktree(), execution.commitSha());
+            ordered.add(new IntegrationInput(next, assignmentOwners.get(next), execution, task.contextVersion(),
+                    task.contractVersion(), task.schemaVersion(), task.adrVersion(),
+                    dependencies.getOrDefault(next, Set.of()).stream().sorted().toList()));
+            pending.remove(next);
+        }
+        return List.copyOf(ordered);
+    }
+
+    public synchronized void requireIntegrationAccepted(List<String> ids) {
+        integrationInputs(ids);
+        for (String id : ids) if (project.task(id).status() != WorkPackageStatus.ACCEPTED)
+            throw new IllegalStateException("Task has not completed human acceptance: " + id);
+    }
 
     public McpProjectRuntime(
             DemoProjectService projectService, AuditEventRepository auditEvents, ObjectMapper mapper) {
@@ -122,6 +166,20 @@ public class McpProjectRuntime {
                 "reconciliationRequired", reconciliationRequired,
                 "automaticallyMergeMain", false,
                 "mergePolicy", "HUMAN_ONLY");
+    }
+
+    public synchronized Map<String, Object> workbenchSnapshot() {
+        var state = new LinkedHashMap<String, Object>(integrationStatus());
+        state.put("tasks", taskIds.stream().map(id -> {
+            var view = new LinkedHashMap<String, Object>(taskView(project.task(id)));
+            view.put("owner", assignmentOwners.get(id));
+            view.put("dependencies", dependencies.getOrDefault(id, Set.of()).stream().sorted().toList());
+            var gates = new LinkedHashMap<String, Boolean>();
+            for (var gate : QualityGate.values()) gates.put(gate.name(), project.gatePassed(id, gate));
+            view.put("gates", gates);
+            return view;
+        }).toList());
+        return state;
     }
 
     public synchronized long contextVersion() {
@@ -414,7 +472,10 @@ public class McpProjectRuntime {
             case "accept_task" -> {
                 project.acceptTask(taskId); releaseExecutionLeases(taskId); result = taskView(task);
             }
-            case "merge_proposal" -> result = project.createManualMergeProposal(taskId, execution.branch(), execution.commitSha());
+            case "merge_proposal" -> {
+                integrationMergeGuard.accept(taskId);
+                result = project.createManualMergeProposal(taskId, execution.branch(), execution.commitSha());
+            }
             default -> throw new IllegalArgumentException("Unsupported governance command: " + action);
         }
         project.recordEvidence(key + ":evidence", taskId, Map.of("actor", subject, "role", role.name(),

@@ -68,10 +68,14 @@ public class ProjectMcpController {
         String name = params.path("name").asText();
         if (!TOOL_NAMES.contains(name)) return error(request.id(), -32602, "Unknown tool: " + name);
         JsonNode arguments = params.path("arguments");
+        if (arguments.isMissingNode()) arguments = mapper.createObjectNode();
         if (WRITE_TOOLS.contains(name) && !validWriteEnvelope(arguments)) {
             return error(request.id(), -32001,
                     "Write tools require taskToken, idempotencyKey and positive expectedVersion");
         }
+
+        try { McpToolSchemas.validateInput(name, arguments, mapper); }
+        catch (IllegalArgumentException exception) { return error(request.id(), -32602, exception.getMessage()); }
 
         try {
             Object structured = execute(name, arguments);
@@ -231,7 +235,8 @@ public class ProjectMcpController {
         return Map.of(
                 "name", name,
                 "description", "Refactor Control Plane project tool: " + name,
-                "inputSchema", Map.of("type", "object", "additionalProperties", true));
+                "inputSchema", McpToolSchemas.input(name),
+                "outputSchema", McpToolSchemas.output(name));
     }
 
     private static Map<String, Object> success(JsonNode id, Object result) {

@@ -2,7 +2,7 @@
 
 面向大型企业遗留系统重构的治理与协作控制平面。它把“项目理解 → 架构决策 → 工作拆分 → 隔离执行 → 冲突分析 → 质量验收”连接成可追踪闭环；人工开发者、企业模型与闭源智能体只是可替换执行器。
 
-当前仓库是可运行的 v0.1 参考实现，核心治理链与分析快照已升级；完整迁移及工作台真实性仍有待完成项，见[当前状态](docs/status.md)。它不会自动合并 `main`，不会把源码发往公网模型，也不替代企业的身份平台、代码托管或 CI/CD。
+当前仓库是可运行的 v0.1 参考实现，核心治理链、分析快照、本地文章数据迁移与接口契约已升级；真实旧库兼容与工作台真实性仍有待完成项，见[当前状态](docs/status.md)。它不会自动合并 `main`，不会把源码发往公网模型，也不替代企业的身份平台、代码托管或 CI/CD。
 
 ## 已实现能力
 
@@ -14,9 +14,10 @@
 - 代码 Review、单元/集成/业务验收四类门禁；全部通过后也只产生人工合并建议。
 - Mock 模型执行器与 OpenAI-compatible 企业 HTTP 网关；审计只保存上下文/输出哈希，不保存密钥或源码正文。
 - Integration AI 冲突报告，包括路径、API Contract、DB Schema、影响任务和建议顺序。
-- MCP Streamable HTTP JSON-RPC 入口，提供规格批准的 15 个工具；写操作强制 task token、幂等键和预期版本。
+- MCP Streamable HTTP JSON-RPC 入口，提供规格批准的 15 个工具及具体输入/输出 Schema；写操作强制 task token、幂等键和预期版本，日志写入前校验参数，见[工具契约](docs/contracts/project-mcp.md)。
 - H2 项目级审计/操作日志，使用数据库权威幂等键、单调 journal sequence、请求/结果日志与版本条件推进；重启按执行全序恢复任务、语义版本和未过期租约，并完成可安全重放的 `PENDING` 操作；随机任务令牌不落库。
 - Vue 3 八角色工作台和一个可运行的文章管理迁移切片（H2 持久化 Spring Boot CRUD、OpenAPI、启动时执行的非破坏性 SQL、Vue 3 增删改查视图）。
+- 旧 `posts` 本地快照预检/迁移，显式时区与状态、原字段与 ID 映射、事务和幂等审计；遇到目标编辑/删除保留现状。操作与未覆盖范围见[文章迁移说明](docs/article-migration.md)。
 
 ## 架构
 
@@ -130,6 +131,8 @@ npm.cmd run dev
 
 ## 验证
 
+后端契约测试也使用 Node 22，独立检查 OpenAPI/MCP 模式中的正则能被 JavaScript 客户端解析。
+
 ```powershell
 cd backend
 mvn.cmd verify
@@ -197,6 +200,8 @@ scripts/                 可复现的项目级初始化脚本
 - [MVP 验收基线](docs/acceptance/mvp-acceptance.md)
 - [MVP 验收证据](docs/acceptance/v0.1-evidence.md)
 - [当前状态](docs/status.md)
+- [多任务集成与本机组合验证](docs/integration-candidates.md)
+- [真实集成工作台操作](docs/integration-workbench.md)
 - [新执行者接手入口](AGENTS.md)
 
 ## 许可证

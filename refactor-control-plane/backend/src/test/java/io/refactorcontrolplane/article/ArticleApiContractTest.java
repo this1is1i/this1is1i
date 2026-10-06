@@ -50,6 +50,16 @@ class ArticleApiContractTest {
     }
 
     @Test
+    void preservesLegacyLengthTitlesAndRejectsLongerOnes() throws Exception {
+        mvc.perform(post("/api/articles").contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"title\":\"" + "文".repeat(255) + "\",\"content\":\"legacy\",\"status\":\"DRAFT\"}"))
+                .andExpect(status().isCreated());
+        mvc.perform(post("/api/articles").contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"title\":\"" + "文".repeat(256) + "\",\"content\":\"legacy\",\"status\":\"DRAFT\"}"))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
     void rejectsArticleWithoutARequiredTitle() throws Exception {
         mvc.perform(post("/api/articles")
                         .contentType(MediaType.APPLICATION_JSON)

@@ -89,7 +89,7 @@ onMounted(loadArticles);
     <p class="article-contract">版本化契约：<code>/api/articles</code> · 最终合并仍需人工批准</p>
     <p class="article-contract">支持新增文章、编辑与删除；所有操作通过同一版本化 REST 契约。</p>
     <form class="article-editor" @submit.prevent="saveArticle">
-      <label>标题 <input v-model="title" name="title" maxlength="200" required></label>
+      <label>标题 <input v-model="title" name="title" maxlength="255" required></label>
       <label>正文 <textarea v-model="content" name="content" rows="3" required></textarea></label>
       <label>状态
         <select v-model="status" name="status">

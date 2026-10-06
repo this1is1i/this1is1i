@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: Article Migration Slice API
-  version: 1.0.0
+  version: 1.1.0
 paths:
   /api/articles:
     get:
@@ -9,11 +9,24 @@ paths:
       responses:
         "200":
           description: Article list
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/Article' }
     post:
       operationId: createArticle
+      requestBody: { $ref: '#/components/requestBodies/ArticleCommand' }
       responses:
         "201":
           description: Article created
+          headers:
+            Location:
+              description: Relative URL of the new article
+              schema: { type: string, example: /api/articles/42 }
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Article' }
         "400":
           description: Invalid article command
   /api/articles/{id}:
@@ -25,16 +38,136 @@ paths:
     get:
       operationId: getArticle
       responses:
-        "200": { description: Article found }
+        "200": { $ref: '#/components/responses/Article' }
+        "400": { description: ID is not a signed 64-bit integer }
         "404": { description: Article not found }
     put:
       operationId: updateArticle
+      requestBody: { $ref: '#/components/requestBodies/ArticleCommand' }
       responses:
-        "200": { description: Article updated }
+        "200": { $ref: '#/components/responses/Article' }
         "400": { description: Invalid article command }
         "404": { description: Article not found }
     delete:
       operationId: deleteArticle
       responses:
         "204": { description: Article deleted }
+        "400": { description: ID is not a signed 64-bit integer }
         "404": { description: Article not found }
+  /api/v1/article-migration/preview:
+    post:
+      operationId: previewLegacyPostMigration
+      description: Read the local H2 posts snapshot. Does not write articles or import records. Requires project manager role.
+      security: [{ localBearer: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/MigrationPolicy' }
+      responses:
+        "200": { $ref: '#/components/responses/MigrationReport' }
+        "400": { $ref: '#/components/responses/MigrationError' }
+        "403": { $ref: '#/components/responses/MigrationError' }
+        "409": { $ref: '#/components/responses/MigrationError' }
+  /api/v1/article-migration/apply:
+    post:
+      operationId: applyLegacyPostMigration
+      description: Apply exactly the previewed source and policy in one local transaction. Conflicts preserve existing data. Requires project manager role.
+      security: [{ localBearer: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/MigrationApply' }
+      responses:
+        "200": { $ref: '#/components/responses/MigrationReport' }
+        "400": { $ref: '#/components/responses/MigrationError' }
+        "403": { $ref: '#/components/responses/MigrationError' }
+        "409": { $ref: '#/components/responses/MigrationError' }
+components:
+  securitySchemes:
+    localBearer: { type: http, scheme: bearer, description: Project-local identity; no default accounts }
+  requestBodies:
+    ArticleCommand:
+      required: true
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ArticleCommand' }
+  responses:
+    Article:
+      description: Article representation
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Article' }
+    MigrationReport:
+      description: Source fingerprint and reconciliation counts; issues must be empty before applying
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/MigrationReport' }
+    MigrationError:
+      description: Invalid input, insufficient permission, or migration conflict; reconcile uncertain database errors before retrying
+      content:
+        application/json:
+          schema:
+            type: object
+            required: [error]
+            properties:
+              error: { type: string }
+  schemas:
+    ArticleCommand:
+      type: object
+      required: [title, content, status]
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 255
+          pattern: '^[\s\S]*\S[\s\S]*$'
+          description: Nonblank; server limit is 255 UTF-16 code units, preserving the legacy column capacity
+        content: { type: string, minLength: 1, pattern: '^[\s\S]*\S[\s\S]*$' }
+        status: { type: string, enum: [DRAFT, PUBLISHED, ARCHIVED] }
+    Article:
+      type: object
+      required: [id, title, content, status, updatedAt]
+      properties:
+        id: { type: integer, format: int64 }
+        title: { type: string }
+        content: { type: string }
+        status: { type: string, enum: [DRAFT, PUBLISHED, ARCHIVED] }
+        updatedAt: { type: string, format: date-time }
+    MigrationPolicy:
+      type: object
+      additionalProperties: false
+      required: [sourceZone, targetStatus]
+      properties:
+        sourceZone:
+          type: string
+          minLength: 1
+          description: Explicit Java ZoneId or fixed offset; ambiguous/gap local times are rejected
+          example: Europe/Istanbul
+        targetStatus: { type: string, enum: [DRAFT, PUBLISHED, ARCHIVED] }
+    MigrationApply:
+      type: object
+      additionalProperties: false
+      required: [sourceZone, targetStatus, expectedFingerprint]
+      properties:
+        sourceZone: { type: string, minLength: 1 }
+        targetStatus: { type: string, enum: [DRAFT, PUBLISHED, ARCHIVED] }
+        expectedFingerprint: { type: string, pattern: '^[0-9a-f]{64}$' }
+    MigrationReport:
+      type: object
+      required: [fingerprint, sourceCount, pending, alreadyImported, imported, issues]
+      properties:
+        fingerprint: { type: string, pattern: '^[0-9a-f]{64}$' }
+        sourceCount: { type: integer, minimum: 0 }
+        pending: { type: integer, minimum: 0 }
+        alreadyImported: { type: integer, minimum: 0 }
+        imported: { type: integer, minimum: 0 }
+        issues:
+          type: array
+          items:
+            type: object
+            required: [legacyId, reason]
+            properties:
+              legacyId: { type: [integer, 'null'], format: int64 }
+              reason: { type: string }

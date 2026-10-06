@@ -16,7 +16,8 @@ import org.springframework.jdbc.datasource.embedded.EmbeddedDatabaseBuilder;
 import org.springframework.jdbc.datasource.embedded.EmbeddedDatabaseType;
 
 class McpGovernanceBoundaryContractTest {
-    private final ObjectMapper mapper = new ObjectMapper().findAndRegisterModules();
+    private final ObjectMapper mapper = new ObjectMapper().findAndRegisterModules()
+            .disable(com.fasterxml.jackson.databind.SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
     private final EmbeddedDatabase database = new EmbeddedDatabaseBuilder().generateUniqueName(true)
             .setType(EmbeddedDatabaseType.H2).addScript("schema.sql").build();
     private final AuditEventRepository audit = new AuditEventRepository(new JdbcTemplate(database));
@@ -240,6 +241,9 @@ class McpGovernanceBoundaryContractTest {
         ObjectNode params = mapper.createObjectNode().put("name", name);
         params.set("arguments", arguments);
         McpRequest request = new McpRequest("2.0", mapper.getNodeFactory().numberNode(1), "tools/call", params);
-        return mapper.valueToTree(controller.handle(request).getBody());
+        JsonNode response = mapper.valueToTree(controller.handle(request).getBody());
+        if (response.has("result")) McpToolSchemas.validate(mapper.valueToTree(McpToolSchemas.output(name)),
+                response.path("result").path("structuredContent"), name);
+        return response;
     }
 }

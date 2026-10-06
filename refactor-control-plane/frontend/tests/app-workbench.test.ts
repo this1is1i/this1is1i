@@ -21,10 +21,14 @@ describe("role workbench", () => {
     expect(html).toContain("项目经理");
     expect(html).toContain("计划与资源");
     expect(html.match(/data-role-id=/g)).toHaveLength(8);
-    expect(html).toContain("静态演示");
+    expect(html).toContain("未连接");
     expect(html).toContain("后端未连接");
     expect(html).not.toContain("治理服务正常");
-    expect(html).toMatch(/<button[^>]*disabled[^>]*>查看任务图/);
+    expect(html).toContain("集成工作台");
+    expect(html).toContain("角色视图不授予操作权限");
+    expect(html).not.toContain("86%");
+    expect(html).not.toContain("WP-101");
+    expect(html).not.toContain("10:42");
   });
 
   it("renders role-specific priorities when an architect opens the workbench", async () => {

@@ -116,7 +116,7 @@ class ControlPlaneApiContractTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(writeCall(5, "submit_changeset", "event-1", "WP-120",
                                 runtime.assignmentToken("WP-120"),
-                                "\"changedPaths\":[\"backend/src/main/java\"]")))
+                                "\"commitSha\":\"deadbeef\",\"changedPaths\":[\"backend/src/main/java\"]")))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.error.code").value(-32003));
 
