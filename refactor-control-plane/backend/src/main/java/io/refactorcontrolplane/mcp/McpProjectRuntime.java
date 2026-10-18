@@ -238,6 +238,14 @@ public class McpProjectRuntime {
                 gateEvidence.entrySet().stream().collect(java.util.stream.Collectors.toUnmodifiableMap(Map.Entry::getKey,entry->Map.copyOf(entry.getValue()))));
     }
 
+    /** Audit reads must not expire leases or advance their watermark. Never serialize this raw projection. */
+    public synchronized Projection auditSnapshot() {
+        return new Projection(project.snapshot(), List.of(), Map.copyOf(executions), Map.copyOf(assignmentOwners),
+                Map.copyOf(assignmentEpochs), Set.copyOf(stoppedExecutions), Map.copyOf(executorRuns),
+                gateEvidence.entrySet().stream().collect(java.util.stream.Collectors.toUnmodifiableMap(Map.Entry::getKey, e -> Map.copyOf(e.getValue()))));
+    }
+    public synchronized boolean auditReconciliationRequired() { return reconciliationRequired; }
+
     public synchronized void restore(Projection projection) {
         project.restore(projection.project());
         leases = new PathLeaseRegistry(Clock.systemUTC(), pathPolicy);

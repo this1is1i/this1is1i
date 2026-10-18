@@ -27,6 +27,13 @@ public class IntegrationStore {
         return find("operation_key", key);
     }
     public Entry get(String id) { return find("id", id).orElseThrow(() -> new IllegalArgumentException("Unknown integration record")); }
+    public Entry getScoped(String id,String kind,String planScope) {
+        var rows=jdbc.query("SELECT * FROM integration_record WHERE id=? AND kind=? AND plan_scope=?",(rs,n)->new Entry(
+                rs.getString("id"),rs.getString("kind"),rs.getString("operation_key"),rs.getString("actor"),
+                rs.getString("request_json"),rs.getString("payload"),rs.getLong("revision")),id,kind,planScope);
+        if(rows.size()!=1)throw new IllegalStateException("Integration evidence is outside this plan scope or kind");
+        return rows.getFirst();
+    }
     private Optional<Entry> find(String column, String value) {
         return jdbc.query("SELECT * FROM integration_record WHERE " + column + "=?", (rs, n) -> new Entry(
                 rs.getString("id"), rs.getString("kind"), rs.getString("operation_key"), rs.getString("actor"),

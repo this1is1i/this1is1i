@@ -35,6 +35,13 @@ async function login() {
   profileId.value = state.snapshot?.profiles[0]?.id ?? "";
 }
 function logout() { token.value = ""; selectedTasks.value = []; evidence.value = {}; stopEvidence.value = {}; assignees.value = {}; executorChoices.value = {}; model.logout(); }
+function downloadAudit() {
+  return model.exportAudit((text,filename)=>{
+    const url=URL.createObjectURL(new Blob([text],{type:"application/json;charset=utf-8"}));
+    const link=document.createElement("a");link.href=url;link.download=filename;link.click();
+    setTimeout(()=>URL.revokeObjectURL(url),0);
+  });
+}
 onBeforeUnmount(() => model.logout());
 </script>
 
@@ -44,6 +51,7 @@ onBeforeUnmount(() => model.logout());
       <div class="panel-heading">
         <div><span class="eyebrow">真实执行 / 人工治理</span><h3>集成工作台</h3></div>
         <div v-if="state.snapshot" class="inline-actions">
+          <button v-if="model.hasRole('AUDITOR') && state.snapshot.auditExportSupported" type="button" class="action-button secondary" :disabled="!model.canExportAudit()" @click="downloadAudit">下载审计 JSON</button>
           <button type="button" class="action-button secondary" :disabled="state.loading" @click="model.refresh()">{{ state.loading ? "刷新中…" : "刷新状态" }}</button>
           <button type="button" class="action-button secondary" @click="logout">退出</button>
         </div>

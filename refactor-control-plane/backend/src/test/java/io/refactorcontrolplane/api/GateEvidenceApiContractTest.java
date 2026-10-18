@@ -27,7 +27,7 @@ import org.springframework.test.web.servlet.MockMvc;
 @AutoConfigureMockMvc @DirtiesContext
 class GateEvidenceApiContractTest {
     @TempDir static Path directory;
-    static Path repo; static String base;
+    static Path repo,barrier; static String base;
     static final ObjectMapper JSON = new ObjectMapper().findAndRegisterModules();
     @Autowired MockMvc mvc;
     @Autowired ConfiguredProjectService source;
@@ -37,12 +37,23 @@ class GateEvidenceApiContractTest {
     @Autowired GateEvidencePolicy evidencePolicy;
     @Autowired com.fasterxml.jackson.databind.ObjectMapper mapper;
     @Autowired org.springframework.jdbc.core.JdbcTemplate jdbc;
+    @Autowired io.refactorcontrolplane.audit.AuditExportService auditExport;
     String sha;
     @DynamicPropertySource static void properties(DynamicPropertyRegistry properties) throws Exception {
         repo = Files.createDirectories(directory.resolve("source")); git(repo, "init", "-b", "main");
         Files.createDirectory(repo.resolve("src")); Files.writeString(repo.resolve("src/pom.xml"), "<project/>", StandardCharsets.UTF_8);
         git(repo,"add","."); commit(repo); base=git(repo,"rev-parse","HEAD");
-        Path file=directory.resolve("project.json"); Files.writeString(file,configuration(repo,base,"src").toString(),StandardCharsets.UTF_8);
+        var plan=configuration(repo,base,"src");
+        barrier=Files.createDirectory(directory.resolve("barrier"));
+        String java=Path.of(System.getProperty("java.home"),"bin",System.getProperty("os.name").startsWith("Windows")?"java.exe":"java").toString();
+        var argv=List.of(java,"-cp",Path.of("target/test-classes").toAbsolutePath().normalize().toString(),AuditBlockingCheck.class.getName(),barrier.toString());
+        var check=((ArrayNode)plan.path("validationProfiles").get(0).path("checks")).addObject().put("id","audit-barrier").put("workingDirectory","src").put("timeoutSeconds",30);
+        check.set("argv",JSON.valueToTree(argv));
+        ((ArrayNode)plan.path("plan").path("workPackages").get(0).path("acceptanceCommands")).add(String.join(" ",argv));
+        plan.putArray("requirements").addObject().put("id","REQ-1").put("statement","Preserve catalog behavior").putArray("taskIds").add("CAT-1");
+        var adr=plan.putArray("architectureDecisions").addObject().put("id","ADR-1").put("statement","Use the approved catalog boundary");
+        adr.putArray("taskIds").add("CAT-1"); adr.putArray("evidence").addObject().put("path","src/pom.xml").put("blobId",git(repo,"rev-parse",base+":src/pom.xml"));
+        Path file=directory.resolve("project.json"); Files.writeString(file,plan.toString(),StandardCharsets.UTF_8);
         properties.add("control-plane.project.definition-file",file::toString);
     }
     @Test void platformValidationAndIndependentStatementsAreRequiredAndRecheckedAtEveryReleaseBoundary() throws Exception {
@@ -91,15 +102,50 @@ class GateEvidenceApiContractTest {
         assertEquals("FAILED",recoveryAudit.findByIdempotencyKey("pending-merge").orElseThrow().status(),"Recovery must not bypass the integration merge guard");
         // A new verification invalidates old test evidence even while the task is already ACCEPTED.
         var fresh=integration.validate(actor("qa",ProjectRole.QA_LEAD),candidateId,new IntegrationService.Validate("validate-again",fingerprint));
+        assertEquals("NOT_ELIGIBLE_AT_OBSERVATION",export(candidateId).path("payload").path("selectedCandidate").path("eligibility").asText());
         assertThrows(IllegalStateException.class,()->recovered.requireIntegrationAccepted(List.of("CAT-1")));
         assertThrows(IllegalStateException.class,()->integration.propose(actor("lead",ProjectRole.ENGINEERING_LEAD),candidateId,new IntegrationService.Propose("stale-proposal",fingerprint,fresh.id())));
         for(String gate:List.of("UNIT_TEST","INTEGRATION_TEST")) command("qa","record_gate",gate(gate).put("candidateId",candidateId).put("validationId",fresh.id()),200);
         var proposal=integration.propose(actor("lead",ProjectRole.ENGINEERING_LEAD),candidateId,new IntegrationService.Propose("proposal",fingerprint,fresh.id()));
         assertFalse(proposal.automaticallyMergeMain());
+        var before=runtime.auditSnapshot();
+        var storedBefore=jdbc.query("SELECT payload FROM integration_record ORDER BY id",(rs,n)->rs.getString(1));
+        var report=export(candidateId); var payload=report.path("payload");
+        assertEquals("ELIGIBLE_AT_OBSERVATION",payload.path("selectedCandidate").path("eligibility").asText());
+        assertEquals("REQ-1",payload.path("plan").path("requirements").get(0).path("id").asText());
+        assertEquals("ADR-1",payload.path("plan").path("architectureDecisions").get(0).path("id").asText());
+        assertEquals(sha,payload.path("executions").get(0).path("commitSha").asText());
+        assertTrue(payload.path("operations").findValuesAsText("actor").contains("business"));
+        assertTrue(payload.path("evidence").findValuesAsText("kind").containsAll(List.of("CODE_REVIEW","UNIT_TEST","INTEGRATION_TEST","BUSINESS_ACCEPTANCE")));
+        assertTrue(payload.path("integrations").findValuesAsText("id").contains(proposal.id()));
+        assertEquals(before,runtime.auditSnapshot());
+        assertEquals(storedBefore,jdbc.query("SELECT payload FROM integration_record ORDER BY id",(rs,n)->rs.getString(1)));
+        assertFalse(report.toString().contains(repo.toString().replace("\\","\\\\")));
+        assertEquals(io.refactorcontrolplane.executor.ExecutorSettings.hash(JSON.writeValueAsString(payload)),report.path("integrity").path("payloadSha256").asText());
+        Files.write(Path.of("../.runtime/phase9c-audit.json"),JSON.writeValueAsBytes(report));
+        jdbc.update("UPDATE integration_record SET plan_scope=? WHERE id=?","f".repeat(64),fresh.id());
+        assertEquals("NOT_ELIGIBLE_AT_OBSERVATION",export(candidateId).path("payload").path("selectedCandidate").path("eligibility").asText());
+        jdbc.update("UPDATE integration_record SET plan_scope=? WHERE id=?",source.planScope(),fresh.id());
         String testId=JSON.valueToTree(runtime.workbenchSnapshot()).path("tasks").get(0).path("gateEvidence").path("UNIT_TEST").asText();
         jdbc.update("DELETE FROM evidence_record WHERE id=?",testId);
         assertThrows(IllegalArgumentException.class,()->integration.propose(actor("lead",ProjectRole.ENGINEERING_LEAD),candidateId,new IntegrationService.Propose("missing-proposal",fingerprint,fresh.id())));
+        Files.writeString(barrier.resolve("block"),"block",StandardCharsets.UTF_8);
+        try(var pool=java.util.concurrent.Executors.newVirtualThreadPerTaskExecutor()) {
+            var running=pool.submit(()->integration.validate(actor("qa",ProjectRole.QA_LEAD),candidateId,new IntegrationService.Validate("blocking-validation",fingerprint)));
+            try {
+                long deadline=System.nanoTime()+java.time.Duration.ofSeconds(10).toNanos();
+                while(!Files.exists(barrier.resolve("entered")) && System.nanoTime()<deadline)Thread.sleep(25);
+                assertTrue(Files.exists(barrier.resolve("entered")),"Real validation process must enter its barrier");
+                var observed=org.junit.jupiter.api.Assertions.assertTimeoutPreemptively(java.time.Duration.ofSeconds(5),()->export(candidateId));
+                assertEquals("NOT_ELIGIBLE_AT_OBSERVATION",observed.path("payload").path("selectedCandidate").path("eligibility").asText());
+                assertTrue(observed.path("payload").path("integrations").findValuesAsText("state").contains("RUNNING"));
+            } finally {Files.writeString(barrier.resolve("release"),"release",StandardCharsets.UTF_8);}
+            assertEquals("PASSED",running.get(10,java.util.concurrent.TimeUnit.SECONDS).state());
+        }
         assertEquals(base,git(repo,"rev-parse","main"));
+    }
+    JsonNode export(String candidateId) throws Exception {
+        return JSON.readTree(auditExport.export(actor("auditor",ProjectRole.AUDITOR),source.planScope(),candidateId));
     }
     ObjectNode gate(String gate) { return JSON.createObjectNode().put("gate",gate).put("passed",true); }
     ObjectNode envelope() { return JSON.createObjectNode().put("taskId","CAT-1").put("expectedVersion",runtime.contextVersion()).put("idempotencyKey",UUID.randomUUID().toString()); }

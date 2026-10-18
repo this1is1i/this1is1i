@@ -16,6 +16,7 @@ export interface Task {
   capacityBlockers?: { kind: "ACTOR" | "ENVIRONMENT"; resourceId: string; capacity: number; used: number }[];
 }
 export interface Snapshot {
+  planScope?: string; auditExportSupported?: boolean;
   projectId: string; subjectId: string; roles: string[]; contextVersion: number; reconciliationRequired: boolean;
   tasks: Task[]; profiles: { id: string; version: string; checks: string[] }[];
   assignees?: { subjectId: string; roles: string[] }[];
@@ -105,6 +106,24 @@ export function createWorkbench(fetcher: typeof fetch = fetch, newKey: () => str
     } finally { if (session === epoch && sequence === detailSequence) state.detailLoading = false; }
   }
   const hasRole = (role: string) => !!state.snapshot?.roles.includes(role);
+  const canExportAudit = () => state.fresh && hasRole("AUDITOR") && state.snapshot?.auditExportSupported === true && !!state.snapshot.planScope;
+  async function exportAudit(save: (text: string, filename: string) => void) {
+    if (!canExportAudit()) return;
+    const session=epoch, sequence=readSequence, navigation=navigationSequence, token=credential, scope=state.snapshot!.planScope!;
+    const candidateId=state.selectedId;
+    const current=()=>session===epoch && sequence===readSequence && navigation===navigationSequence && canExportAudit();
+    try {
+      const query=new URLSearchParams({expectedPlanScope:scope});if(candidateId)query.set("candidateId",candidateId);
+      const response=await fetcher(`/api/v1/audit/export?${query}`,{method:"GET",cache:"no-store",redirect:"error",headers:{Accept:"application/json",Authorization:`Bearer ${token}`}});
+      const text=await response.text();
+      if(!current())return;
+      if(!response.ok)throw new Error(`审计导出失败（HTTP ${response.status}），请刷新后核对。`);
+      const report=JSON.parse(text);
+      if(report.schemaVersion!=="refactor-control-plane.audit.v1" || report.payload?.plan?.scope!==scope)throw new Error("审计报告的版本或计划范围不匹配。");
+      // Preserve server JSON bytes as text: parsing and re-encoding would round large integer evidence.
+      save(text,`audit-${scope}.json`);state.notice="审计报告已下载；审批历史不代表下载后仍可合并。";
+    }catch(error){if(current())state.error=error instanceof Error?error.message:"审计导出失败";}
+  }
   const writable = () => state.fresh && !!state.snapshot && !state.snapshot.reconciliationRequired && !state.busy && !state.pending;
   const canAssign = (task: Task) => writable() && hasRole("PROJECT_MANAGER") && task.currentlyValid && task.status === "READY" && !task.execution;
   const canClaim = (task: Task) => writable() && task.currentlyValid && task.status === "READY" && !task.execution
@@ -263,7 +282,7 @@ export function createWorkbench(fetcher: typeof fetch = fetch, newKey: () => str
   }
   return { state, login, logout, refresh, select, hasRole, writable, canValidate, canPropose, canTask, dependencyClosure,
     canAssign, canClaim, assign, claim, canDispatch, dispatchExecutor, refreshExecutor, canReconcile, reconcile,
-    createCandidate, validate, propose, taskCommand, canRecordGate,
+    createCandidate, validate, propose, taskCommand, canRecordGate, canExportAudit, exportAudit,
     acknowledgePending: () => { if (state.fresh && !state.busy) { state.pending = null; state.notice = "已结束本页重试记录；服务端操作和证据仍保留。"; } },
     retry: async () => { if (state.pending) await run({ ...state.pending, body: { ...state.pending.body } }); } };
 }

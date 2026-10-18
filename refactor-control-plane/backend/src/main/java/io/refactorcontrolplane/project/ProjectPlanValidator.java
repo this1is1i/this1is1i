@@ -43,6 +43,16 @@ final class ProjectPlanValidator {
             }
         }
         var closure = new HashMap<String, Set<String>>();
+        if (input.requirements() != null) {
+            if (input.requirements().size() > 100) fail("At most 100 requirements are supported");
+            var requirementIds = new HashSet<String>();
+            for (var requirement : input.requirements()) {
+                if (requirement == null || requirement.id() == null || !requirement.id().matches("[A-Za-z0-9][A-Za-z0-9_-]{0,99}")
+                        || !requirementIds.add(requirement.id()) || requirement.statement() == null || requirement.statement().isBlank()
+                        || requirement.statement().length() > 4000 || requirement.taskIds() == null || requirement.taskIds().isEmpty()
+                        || !tasks.keySet().containsAll(requirement.taskIds())) fail("Requirement needs a unique ID, statement and declared tasks");
+            }
+        }
         for (String id : tasks.keySet()) ancestors(id, tasks, closure, new HashSet<>());
         if (!tasks.keySet().equals(input.taskResources().keySet()) || !tasks.keySet().equals(input.taskProfiles().keySet()))
             fail("Resource and profile mappings must cover exactly the declared tasks");

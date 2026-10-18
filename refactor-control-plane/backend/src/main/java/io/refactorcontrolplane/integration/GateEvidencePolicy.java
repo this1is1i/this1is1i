@@ -69,7 +69,7 @@ public class GateEvidencePolicy {
     }
     private IntegrationService.Validation validation(String candidateId,String validationId,EvidenceStore.Binding binding,boolean passed,
             Function<List<String>,List<McpProjectRuntime.IntegrationInput>> currentInputs) {
-        var entry=integrations.get(candidateId);
+        var entry=integrations.getScoped(candidateId,"candidate",binding.planScope());
         if (!entry.kind().equals("candidate")) throw new IllegalArgumentException("Expected a candidate ID");
         var candidate=integrations.read(entry,IntegrationService.Candidate.class); var plan=candidate.plan();
         var ids=plan.inputs().stream().map(McpProjectRuntime.IntegrationInput::taskId).toList();
@@ -79,7 +79,7 @@ public class GateEvidencePolicy {
         String fingerprint=IntegrationService.fingerprint(source,integrations,repository,targetRef,git.target(targetRef),inputs,profile);
         if (!fingerprint.equals(plan.fingerprint()) || !git.target(IntegrationGit.branch(candidateId)).equals(candidate.assembly().commit()))
             throw new IllegalStateException("Candidate inputs, profile, target or branch changed");
-        var validationEntry=integrations.get(validationId);
+        var validationEntry=integrations.getScoped(validationId,"validation",binding.planScope());
         if (!validationEntry.kind().equals("validation")) throw new IllegalArgumentException("Expected a validation ID");
         var result=integrations.read(validationEntry,IntegrationService.Validation.class);
         if (!result.candidateId().equals(candidateId) || !result.fingerprint().equals(fingerprint)

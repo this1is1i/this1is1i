@@ -1,0 +1,102 @@
+{
+  "date": "2026-10-18",
+  "scope": "9C configured single-node audit export; actual local Git and validation chain plus typed model receipt fixture",
+  "backendTests": [
+    {
+      "class": "api.AuditExportApiContractTest",
+      "tests": 7,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "class": "api.GateEvidenceApiContractTest",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "class": "api.ProjectRevisionApiContractTest",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "class": "project.RequirementPlanContractTest",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "class": "executor.ExecutionModelEvidenceContractTest",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "class": "executor.HttpExecutorModelTraceContractTest",
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "class": "governance.EvidenceStoreContractTest",
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    }
+  ],
+  "backendDistinctTests": 19,
+  "frontendTests": 22,
+  "backendVerify": "PASS",
+  "frontendBuild": "PASS",
+  "independentPayloadDigestVerification": "PASS",
+  "automaticallyMergeMain": false,
+  "fixtures": [
+    {
+      "file": "milestone9c-audit-example.json",
+      "payloadSha256": "65cd4a180d0f046b59b060ed149558026b1bb766affdd3887c5137fb48daa0e5",
+      "planScope": "c800de451fcc29aa1e4af2c8e7ca42ab86178f948b65af31ba3b694faa249f0c",
+      "observedAt": "2026-10-18T03:52:35.422361100Z",
+      "executionIds": [
+        "2fcc0982-42af-4423-b275-cc5e0ed77e92"
+      ],
+      "evidenceIds": [
+        "0b310eafdbe8955341c896c89129645a3eed9777fa5c1c68238e3a3e1c70bc73",
+        "406942f278c9e40119433ad690d829a2809d376fbbe46e4ddc718b937bf64e67",
+        "5472c12190ea947c84eec0b284cbe1c423afa2af6916700f6c4d4f7bfcfdec09",
+        "605a10cf39bbda0289257bb261ecd505a1535f63f388dc237a754d6c97b7a0e6",
+        "6ccb1b2defc09baf23b1898de29e921564dfa869a771a5ea7f4124554c765b32",
+        "702ee08bed1fed92568d442131bc6c01dae917f5992b5d09fcaf536396343c6e",
+        "d2bd8d7997f969e2a10a37553b0266d747475da8b9d3640a6ffba60c658f656a"
+      ],
+      "integrationIds": [
+        "40bdd3fa-b8c2-4e85-aa00-53df906ed0f2",
+        "4b3678a4-1fe3-4b1e-9c8b-d8d4d77eca69",
+        "b83f0e2f-b7b1-4d14-b9e5-c0c221cc0db6",
+        "fc6ee982-06e4-47a2-94d1-e1122556c01c"
+      ]
+    },
+    {
+      "file": "milestone9c-model-example.json",
+      "payloadSha256": "d3e0515206848436c1744e624ac4ef8d5f73434edeb2475d12337ddd6c870af8",
+      "planScope": "81917dd4242873465e2eaa14f606f4f4939af353175ed63e5bb42356940737de",
+      "observedAt": "2026-10-18T03:56:10.985377700Z",
+      "executionIds": [],
+      "evidenceIds": [
+        "28f6d6df0d5ba388032d387a180bd23170fb8a86d00860f2ccb5499839b3d039"
+      ],
+      "integrationIds": []
+    }
+  ],
+  "remaining": [
+    "milestone10 business and database decisions",
+    "milestone11 full workflow acceptance"
+  ]
+}

@@ -4,7 +4,7 @@
 
 ## 从哪里继续
 
-第 7、8 里程碑和 **9A、9B 均已完成**。下一阶段是 **9C 审计导出**。不要重做 9A/9B，也不要将第 9 里程碑或完整 MVP 标记为完成。
+第 7、8、9 里程碑均已完成（9A–9C）。下一阶段是 **第 10 里程碑文章行为与数据升级**，数据库策略及业务差异须由用户决定。不要重做已验收阶段，也不要将完整 MVP 标记为完成。
 
 先读本项目 `AGENTS.md`、[当前状态](status.md)、[开发计划](development-plan.md)，再按需读[执行证据](execution-evidence.md)、[9B 验收](acceptance/milestone9b-execution.md)、[证据门禁](evidence-store.md)和[执行器协议](task-executors.md)。旧阶段记录属于历史证据，以最新状态为准。
 
@@ -39,7 +39,7 @@
 
 ## 最近验证结果
 
-2026-10-18 后端最新逐类结果共 **32 项**通过，`verify` 打包成功；前端 **20 项**相关测试、类型检查及生产构建通过。后端分两批 24/16 项，重复项不累加；最后只补充语义重新验证 2 项并通过。日志为 `.runtime/phase9b-final.log`、`phase9b-final-recheck.log`、`phase9b-revalidation-final.log`。六场景身份摘要在 `docs/acceptance/milestone9b-execution-evidence.json`，覆盖本机 HTTP/Mock 模型、真实 Git、不可变证据、冲突/行为拒绝、持久恢复、语义重新验证和 8C/9A 回归。
+9C 最新逐类结果共 **19 项后端、22 项前端**通过，后端 `verify`、前端类型/生产构建成功。覆盖审计鉴权、scope、历史精确执行、模型声明、平台门禁、旧证据失效、只读、真实阻塞验证并发及容量；日志与逐类计数见 [9C 验收](acceptance/milestone9c-audit.md)。9B 的 32 项及两个语义重验证场景属于上一阶段，不与本期重叠计数累加；旧证据包继续保留。
 
 反例日志：`.runtime/phase9a-execution-red.log`（旧执行 ID 审批原先错误放行）、`.runtime/phase9a-recovery-red.log`（PENDING 合并建议恢复原先绕过集成守卫）。两者已修复并纳入最终通过结果；独立复核无剩余阻塞。
 
@@ -49,7 +49,9 @@
 
 9B 已将模型回报和真实执行持久关联：`ExecutionModelEvidence` / `ExecutorModelRun`、`ExecutionProtocol`、`McpProjectRuntime`，工作台为 `ModelReceipts.vue`。配置模式契约/Schema 发布用 `resourceIds`、真实 `artifactPaths`、执行 ID 与提交生成证据，并由计划补齐资源使用者。所有证据入口在日志前复用 EvidenceStore 纯校验。模型来源是可信执行服务声明；平台不直接驱动 ModelGateway，也没有已验证的企业模型/开发智能体连接。请求工具和实际调用记录必须保持区分。
 
-9C 提供审计角色可用的需求/ADR → 任务 → 执行/模型/语义证据 → 提交 → 验证 → 人工决策导出，并复验精确候选只生成人工建议。优先复用现有证据和投递/journal，不能把 HTTP 声明升级为平台独立证明。第 10 里程碑的数据库升级策略尚待用户选择，富文本、旧 URL、权限等业务差异按 `docs/article-parity-checklist.md` 确认。
+9C 已交付：[导出协议](audit-export.md) 和 [验收/真实样本](acceptance/milestone9c-audit.md)。实现入口为 `AuditExportService`、`AuditExportController`、`runtime.auditSnapshot()` 和工作台 `exportAudit()`。需求映射是批准计划内声明，历史语义绑定明确未独立重验；不得把导出摘要视为签名、HTTP 回报视为平台证明或历史审批视为当前资格。
+
+第 10 里程碑的数据库升级策略尚待用户选择：A 保留 MySQL，减少同时迁库风险，适合当前框架升级；B 迁到明确的新引擎，增加数据/SQL/切换恢复范围，适合确有换库目标。推荐 A 尚不是批准。富文本、旧 URL、权限等业务差异按 `docs/article-parity-checklist.md` 确认；先让用户决定，再实施依赖这些决定的代码，不安装数据库或修改全局设置。
 
 ## 工作区与运行注意事项
 
@@ -60,4 +62,4 @@
 
 新会话可直接使用：
 
-> 请阅读 refactor-control-plane/AGENTS.md 和 docs/session-handoff.md，从已批准计划的 9C 继续开发；9A/9B 已验收且成果已推送，沿用三项 A 决策，保留用户改动，避免冗余测试。用户已明确批准当前仓库/main 的成果保存，不重复询问相同授权。
+> 请阅读 refactor-control-plane/AGENTS.md 和 docs/session-handoff.md，推进第 10 里程碑；第 9 里程碑已完成，先确认数据库升级策略和文章业务差异。沿用三项 A 决策，保留用户改动，避免冗余测试。用户已明确批准当前仓库/main 的成果保存，不重复询问相同授权。

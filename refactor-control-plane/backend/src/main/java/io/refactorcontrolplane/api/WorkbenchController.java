@@ -22,6 +22,7 @@ public class WorkbenchController {
     private final ProjectMcpController journal;
     private final ObjectMapper mapper;
     private final io.refactorcontrolplane.executor.ExecutorSettings executors;
+    private final io.refactorcontrolplane.project.ProjectSource source;
     public WorkbenchController(LocalIdentityRegistry identities, McpProjectRuntime runtime,
             IntegrationProfiles profiles, io.refactorcontrolplane.project.ProjectSource project, ProjectMcpController journal, ObjectMapper mapper,
             io.refactorcontrolplane.executor.ExecutorSettings executors) {
@@ -29,6 +30,7 @@ public class WorkbenchController {
         this.projectId = project.overview().projectId();
         this.journal = journal; this.mapper = mapper;
         this.executors = executors;
+        this.source = project;
     }
     @GetMapping("/api/v1/workbench")
     public ResponseEntity<?> snapshot(@RequestHeader(value="Authorization", required=false) String authorization) {
@@ -37,6 +39,7 @@ public class WorkbenchController {
             if (!actor.projectId().equals(projectId)) throw new SecurityException("Project membership required");
             var result = new LinkedHashMap<String, Object>(runtime.workbenchSnapshot());
             result.put("projectId", projectId); result.put("subjectId", actor.subjectId());
+            result.put("planScope",source.planScope()); result.put("auditExportSupported",source.configured());
             result.put("executors", executors.available());
             result.put("roles", actor.roles().stream().map(Enum::name).sorted().toList());
             if (actor.roles().contains(ProjectRole.PROJECT_MANAGER)) result.put("assignees", identities.projectMembers(projectId));

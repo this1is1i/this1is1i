@@ -82,6 +82,26 @@ public class IntegrationService {
         return new View(candidate, invalid.isEmpty() ? candidate.state() : "STALE", invalid.isEmpty(), invalid, validation);
     }
 
+    /** Called under the runtime lock after the audit reader has checked every record's plan scope. No writes. */
+    public boolean auditProposalEligibility(Principal actor,String id) {
+        authorize(actor,ProjectRole.AUDITOR);
+        try {
+            Candidate candidate=store.read(store.getScoped(id,"candidate",source.planScope()),Candidate.class); requireCurrent(candidate);
+            if (!candidate.state().equals("READY") || candidate.latestValidation()==null) return false;
+            Validation validation=store.read(store.getScoped(candidate.latestValidation(),"validation",source.planScope()),Validation.class);
+            if (!"PASSED".equals(validation.state()) || validation.completedAt()==null
+                    || !validation.id().equals(candidate.latestValidation()) || !id.equals(validation.candidateId())
+                    || !candidate.plan().fingerprint().equals(validation.fingerprint())
+                    || !candidate.assembly().commit().equals(validation.commitSha()) || validation.checks().size()!=candidate.plan().profile().checks().size()) return false;
+            for(int index=0;index<validation.checks().size();index++) {
+                var actual=validation.checks().get(index);var expected=candidate.plan().profile().checks().get(index);
+                if (!expected.id().equals(actual.checkId()) || !expected.argv().equals(actual.argv()) || !expected.workingDirectory().equals(actual.workingDirectory())
+                        || actual.exitCode()!=0 || actual.timedOut() || actual.truncated()) return false;
+            }
+            runtime.requireIntegrationAccepted(taskIds(candidate)); return true;
+        } catch(IllegalArgumentException|IllegalStateException ex){return false;}
+    }
+
     public synchronized View create(Principal actor, Create request) {
         authorize(actor, ProjectRole.ENGINEERING_LEAD); key(request.idempotencyKey());
         if (request.profileId() == null || request.profileId().isBlank() || request.taskIds() == null)
