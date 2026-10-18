@@ -19,11 +19,24 @@ public final class ExecutionProtocol {
                 owner, executorId, executorFingerprint, execution, allowedPaths, forbiddenPaths, checks, deadline); }
     }
     public record CheckResult(String id, int exitCode, boolean timedOut, boolean truncated) {}
-    public record Result(String executionId, String requestHash, long sequence, String state, String commitSha, List<CheckResult> checks) {
-        public Result { checks = checks == null ? List.of() : List.copyOf(checks); }
+    public record Result(String executionId, String requestHash, long sequence, String state, String commitSha, List<CheckResult> checks,
+            List<ExecutorModelRun> modelRuns) {
+        public Result(String executionId, String requestHash, long sequence, String state, String commitSha, List<CheckResult> checks) {
+            this(executionId, requestHash, sequence, state, commitSha, checks, null);
+        }
+        public Result {
+            checks = checks == null ? List.of() : List.copyOf(checks);
+            if (modelRuns != null) {
+                modelRuns = List.copyOf(modelRuns);
+                if (modelRuns.size() > 20 || modelRuns.stream().map(ExecutorModelRun::id).distinct().count() != modelRuns.size()
+                        || (!modelRuns.isEmpty() && !"SUCCEEDED".equals(state)))
+                    throw new IllegalArgumentException("Invalid model receipt list or execution state");
+            }
+        }
     }
-    public record Run(Request request, String state, Result result, String observedAt) {
-        public Run(Request request, String state, Result result) { this(request, state, result, Instant.now().toString()); }
+    public record Run(Request request, String state, Result result, String observedAt, String modelEvidenceRef) {
+        public Run(Request request, String state, Result result) { this(request, state, result, Instant.now().toString(), null); }
+        public Run(Request request, String state, Result result, String observedAt) { this(request, state, result, observedAt, null); }
         public boolean terminal() { return Set.of("SUCCEEDED", "FAILED", "STOPPED").contains(state); }
     }
 }

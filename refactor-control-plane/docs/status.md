@@ -1,9 +1,24 @@
 # 当前状态
 
-- 更新时间：2026-10-17
+- 更新时间：2026-10-18
 - 规格：v0.1 已批准并持久化
-- 阶段：**第 9A 已按用户选择 A 完成并通过定向验收，下一阶段为 9B**。第 8 里程碑已完成（8A–8C）。完整 MVP 尚未完成；范围与证据见[开发计划](development-plan.md)和[验收矩阵](acceptance/v0.1-evidence.md)。
+- 阶段：**9A、9B 已完成，下一阶段为 9C 审计导出**。第 8 里程碑已完成（8A–8C）。完整第 9 里程碑和 MVP 尚未完成；范围与证据见[开发计划](development-plan.md)和[验收矩阵](acceptance/v0.1-evidence.md)。
 - 新会话入口：[开发交接](session-handoff.md)，包含已确认决策、源码入口、验证边界及未提交工作区说明。
+
+## 第 9B：真实执行、冲突与模型关联（2026-10-18）
+
+- HTTP 成功结果增加可选模型摘要，完整输入/上下文/输出哈希、提示词版本、token、请求工具与实际工具记录分开保存。服务端生成不可变证据并绑定真实提交、执行、计划、请求及执行器；读取、工作台和集成输入重查。来源标为执行服务声明，不把模型回报作为测试资格。
+- 配置模式契约/Schema 发布须绑定精确执行与提交、批准资源及真实 diff 路径；平台补齐资源使用者和下游闭包，返回源码证据引用。真实 HTTP 工作者修改契约/DDL 后，旧执行和候选失效；重启、停止对账、重新验证与新执行提交后，旧回报仍不能覆盖新执行。
+- 本机 HTTP worker 实际调用 MockModelGateway、应用返回内容、检查与提交；真实同路径分支产生 Git 冲突；不同路径且相同语义版本的任务各自检查通过，组合行为检查失败并拒绝建议。main 保持各场景原基线。
+- 证据已写而 journal 未完成、完成已落库但响应丢失两种边界均恢复原证据，不重复 PUT、模型调用或提交。复审指出的超限证据 PENDING 循环与空列表绕过校验均先用失败反例确认再修复；所有证据入口使用与 append 共用的纯校验，平台元数据加入后的 UTF-8 大小在写日志前检查。JSON 数字通过类型化比较，避免小整数节点类型误判；终态同序号重报保留原证据引用。最终独立复审无剩余实质阻断。
+
+最终验证：两批定向运行 **24 项和 16 项**均通过，合并最新逐类结果为 **32 项不同后端测试**，0 失败/错误/跳过，`verify` 打包成功。最后只补跑新增的契约/Schema 重新验证 **2 项**，通过且不重复计数。前端 **20 项**测试、类型检查和生产构建通过。没有重复文章全量测试，没有宣称新浏览器端到端验收。
+
+日志：`.runtime/phase9b-final.log`、`phase9b-final-recheck.log`、`phase9b-revalidation-final.log`。失败反例包括 `phase9b-model-red-allowed.log`、`phase9b-model-evidence-red.log`、`phase9b-model-number-red.log`、`phase9b-model-recovery-red.log`、`phase9b-review-red.log` 和 `phase9b-semantic-size-red.log`。六类场景身份摘要已保存为[9B 证据包](acceptance/milestone9b-execution-evidence.json)，命令和采信边界见[9B 验收](acceptance/milestone9b-execution.md)及[执行证据](execution-evidence.md)。
+
+本期仅证明本机 Mock 模型与可信 HTTP 工作者链路；未连接企业模型/开发智能体。文件 H2 重开不等于断电耐久性认证。完整审计导出仍在 9C，文章业务与数据库方案在第 10 里程碑。
+
+版本保存：此前第六期至 9A 的 125 个项目文件已保存为本地提交 `ed298f1`，9B 成果另行提交。远端推送被自动审批阻断，等待用户明确批准 `https://github.com/this1is1i/this1is1i.git` 的 `main` 写入；当前不能声称远端已保存。
 
 ## 第 9A：平台验证与独立人工证据（2026-10-17）
 

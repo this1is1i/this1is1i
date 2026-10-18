@@ -181,6 +181,14 @@ public class ConfiguredProjectService implements ProjectSource {
                 .filter(id -> definition.resources().get(id).kind().equals("ENVIRONMENT"))
                 .collect(java.util.stream.Collectors.toUnmodifiableSet());
     }
+    @Override public Set<String> semanticResources(String taskId, String kind) {
+        return definition.taskResources().get(taskId).stream().filter(id -> definition.resources().get(id).kind().equals(kind))
+                .collect(java.util.stream.Collectors.toUnmodifiableSet());
+    }
+    @Override public Set<String> semanticConsumers(Set<String> resourceIds) {
+        return definition.taskResources().entrySet().stream().filter(entry -> !java.util.Collections.disjoint(entry.getValue(), resourceIds))
+                .map(Map.Entry::getKey).collect(java.util.stream.Collectors.toUnmodifiableSet());
+    }
     @Override public List<IntegrationProfiles.Profile> validationProfiles() { return definition.validationProfiles(); }
     @Override public void requireValidationProfile(List<String> taskIds, IntegrationProfiles.Profile selected) {
         for (String taskId : taskIds) {

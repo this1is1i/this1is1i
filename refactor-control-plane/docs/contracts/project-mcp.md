@@ -23,9 +23,9 @@ H2 幂等键列扩展为 400 个 UTF-16 单元以容纳 200 个补充平面字�
 | reserve_paths | ownerId、resourcePath 必填；mode、ttlSeconds、taskExecutionId 可选 | accepted、lease（拒绝时 null）、conflicts |
 | heartbeat | leaseId、leaseVersion 必填；ttlSeconds、taskExecutionId 可选 | 更新后的租约 |
 | release_paths | leaseId、leaseVersion 必填；taskExecutionId 可选 | released |
-| publish_contract_change | assetVersion、affectedTaskIds 可选 | published、affectedTaskIds、contextVersion |
-| publish_schema_change | 同上 | 同上 |
-| record_architecture_decision | 同上 | 同上 |
+| publish_contract_change | assetVersion、affectedTaskIds 可选；配置模式须提供 taskExecutionId、commitSha、resourceIds、artifactPaths | published、affectedTaskIds、contextVersion；配置模式另返回 sourceEvidenceRef |
+| publish_schema_change | 同上，对应 DB_SCHEMA 资源 | 同上 |
+| record_architecture_decision | assetVersion、affectedTaskIds 可选，保持原接口 | published、affectedTaskIds、contextVersion |
 | report_change_event | type 必填；TaskStatusChanged 还要求 targetStatus | recorded、type、contextVersion，以及 task 或 taskId |
 | submit_changeset | commitSha 必填；changedPaths 为废弃兼容字段，忽略其授权意义 | accepted、unauthorizedPaths |
 | report_blocker | 无 | blocked、task |

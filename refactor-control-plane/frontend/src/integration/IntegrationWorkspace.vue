@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, ref } from "vue";
 import { createWorkbench } from "./workbench";
+import ModelReceipts from "./ModelReceipts.vue";
 
 const model = createWorkbench();
 const state = model.state;
@@ -150,6 +151,7 @@ onBeforeUnmount(() => model.logout());
             <p>执行器 {{ task.executor.request.executorId }} · {{ task.executor.state === 'UNKNOWN' ? '结果未知，保留占用并查询原执行' : task.executor.state === 'SUCCEEDED' ? '已提交，等待人工门禁' : task.executor.state === 'FAILED' ? '执行失败，可检查工作树后返工' : task.executor.state === 'STOPPED' ? '已确认停止' : '执行中' }}</p>
             <p class="muted">最近核对：{{ task.executor.observedAt }} · 运行截止：{{ task.executor.request.deadline }}</p>
             <p v-for="check in task.executor.result?.checks ?? []" :key="check.id" class="muted">{{ check.id }}：退出码 {{ check.exitCode }}{{ check.timedOut ? ' · 超时' : '' }}{{ check.truncated ? ' · 输出超过限制' : '' }}</p>
+            <ModelReceipts :runs="task.executor.result?.modelRuns" :evidence-ref="task.executor.modelEvidenceRef" />
             <button v-if="task.owner === state.snapshot.subjectId" class="action-button secondary" type="button" :disabled="!model.writable()" @click="model.refreshExecutor(task.id)">查询原执行状态</button>
           </div>
           <p class="gate-summary"><span v-for="gate in gates" :key="gate">{{ task.gates[gate] ? '✓' : '○' }} {{ gateLabels[gate] }}</span></p>

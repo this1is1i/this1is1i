@@ -20,4 +20,6 @@ public interface ProjectSource {
     default ProjectScheduling scheduling() { return null; }
     default Set<String> taskEnvironments(String taskId) { return Set.of(); }
     default List<IntegrationProfiles.Check> executionChecks(String taskId) { throw new IllegalStateException("Approved task validation is required"); }
+    default Set<String> semanticResources(String taskId, String kind) { return Set.of(); }
+    default Set<String> semanticConsumers(Set<String> resourceIds) { return Set.of(); }
 }

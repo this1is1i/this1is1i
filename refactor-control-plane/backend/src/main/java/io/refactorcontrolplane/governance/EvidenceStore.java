@@ -37,13 +37,25 @@ public class EvidenceStore {
     private record Document(String operationKey, Binding binding, String kind, String author, String createdAt, JsonNode content) {}
     private record Row(String id, String scope, String key, String requestHash, String payload) {}
 
-    public Evidence append(String key, Binding binding, String kind, String author, JsonNode content) {
+    public void validateAppend(String key, Binding binding, String kind, String author, JsonNode content) {
+        validated(key, binding, kind, author, content);
+    }
+    public void validateContent(JsonNode content) { frozenContent(content); }
+    private JsonNode validated(String key, Binding binding, String kind, String author, JsonNode content) {
         if (!text(key, 160) || binding == null || kind == null || !kind.matches("[A-Z_]{1,50}")
                 || !text(author, 200) || content == null || !content.isObject() || content.isEmpty())
             throw new IllegalArgumentException("Evidence requires a key, binding, kind, author and object content");
+        return frozenContent(content);
+    }
+    private JsonNode frozenContent(JsonNode content) {
+        if (content == null || !content.isObject() || content.isEmpty()) throw new IllegalArgumentException("Evidence requires object content");
         JsonNode frozen = canonical(content, 0);
         if (json(frozen).getBytes(StandardCharsets.UTF_8).length > 65536)
             throw new IllegalArgumentException("Evidence content exceeds 64 KiB");
+        return frozen;
+    }
+    public Evidence append(String key, Binding binding, String kind, String author, JsonNode content) {
+        JsonNode frozen = validated(key, binding, kind, author, content);
         String requestHash = requestHash(binding, kind, author, frozen);
         var existing = byKey(binding.planScope(), key);
         if (existing.isPresent()) return replay(existing.get(), requestHash);

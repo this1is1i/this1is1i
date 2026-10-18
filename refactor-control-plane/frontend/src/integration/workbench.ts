@@ -1,12 +1,18 @@
 import { reactive } from "vue";
 
+export interface ModelRun {
+  id: string; model: string; promptVersion: string; inputHash: string; contextHash: string; outputHash: string; totalTokens: number;
+  requestedTools: string[];
+  toolCalls: { id: string; name: string; inputHash: string; outputHash: string; state: string }[];
+}
+
 export interface Execution { executionId: string; branch: string; path: string; baseCommit: string; commitSha: string | null }
 export interface Task {
   id: string; status: string; currentlyValid: boolean; owner: string; dependencies: string[];
   gates: Record<string, boolean>; gateEvidence?: Record<string, string>; execution?: Execution; contextVersion: number; contractVersion: number; schemaVersion: number;
   claimable?: boolean; allowedPaths?: string[]; forbiddenPaths?: string[]; workingDirectory?: string; acceptanceCommands?: string[];
   capacityHeld?: boolean;
-  executor?: { state: string; observedAt: string; request: { executorId: string; deadline: string }; result?: { sequence: number; commitSha: string | null; checks: { id: string; exitCode: number; timedOut: boolean; truncated: boolean }[] } | null };
+  executor?: { state: string; observedAt: string; modelEvidenceRef?: string | null; request: { executorId: string; deadline: string }; result?: { sequence: number; commitSha: string | null; checks: { id: string; exitCode: number; timedOut: boolean; truncated: boolean }[]; modelRuns?: ModelRun[] | null } | null };
   capacityBlockers?: { kind: "ACTOR" | "ENVIRONMENT"; resourceId: string; capacity: number; used: number }[];
 }
 export interface Snapshot {

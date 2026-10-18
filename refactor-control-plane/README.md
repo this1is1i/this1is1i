@@ -17,6 +17,7 @@
 - 代码 Review、单元/集成/业务验收四类门禁；配置模式采信平台实际验证与独立人工说明，绑定精确执行、提交及不可变证据，验收前重查内容与时效；全部通过后只产生人工合并建议。见[证据门禁说明](docs/evidence-store.md)。
 - Mock 模型网关与 OpenAI-compatible 企业 HTTP 网关处理文本请求；模型审计保存上下文/输出哈希，不保存密钥或源码正文。
 - Mock/HTTP 任务执行器接通真实工作树修改、检查和提交；工作台支持启动与状态查询，结果未知时保留容量、只查询原 ID。配置和协议见[任务执行器](docs/task-executors.md)；[三执行器并发与恢复验收](docs/acceptance/milestone8-execution.md)已通过。
+- HTTP 模型回报与真实执行/提交绑定，区分请求工具和实际调用记录；配置模式契约/Schema 发布关联真实改动与资源消费者。证据有明确来源，不能替代平台测试；[9B 执行与冲突验收](docs/acceptance/milestone9b-execution.md)已通过，完整审计导出留在 9C。
 - Integration AI 冲突报告，包括路径、API Contract、DB Schema、影响任务和建议顺序。
 - MCP Streamable HTTP JSON-RPC 入口，提供规格批准的 15 个工具及具体输入/输出 Schema；写操作强制 task token、幂等键和预期版本，日志写入前校验参数，见[工具契约](docs/contracts/project-mcp.md)。
 - H2 项目级审计/操作日志，使用数据库权威幂等键、单调 journal sequence、请求/结果日志与版本条件推进；重启按执行全序恢复任务、语义版本和未过期租约，并完成可安全重放的 `PENDING` 操作；随机任务令牌不落库。

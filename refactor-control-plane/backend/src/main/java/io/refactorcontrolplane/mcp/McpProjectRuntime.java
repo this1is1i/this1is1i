@@ -57,6 +57,8 @@ public class McpProjectRuntime {
     private final Map<String, ExecutionProtocol.Run> executorRuns = new LinkedHashMap<>();
     private final ObjectMapper mapper;
     private final io.refactorcontrolplane.integration.GateEvidencePolicy evidencePolicy;
+    private final io.refactorcontrolplane.executor.ExecutionModelEvidence modelEvidence;
+    private final io.refactorcontrolplane.governance.EvidenceStore evidenceStore;
     private final Map<String, Map<String,String>> gateEvidence = new LinkedHashMap<>();
     private java.util.function.Consumer<String> integrationMergeGuard = taskId -> {};
 
@@ -89,6 +91,7 @@ public class McpProjectRuntime {
             }
             Execution execution = executions.get(next);
             if (execution == null || execution.commitSha() == null) throw new IllegalStateException("Missing submitted execution");
+            executorRun(execution.executionId());
             git.verifiedChangedPaths(repository, execution.worktree(), execution.commitSha());
             ordered.add(new IntegrationInput(next, assignmentOwners.get(next), execution, task.contextVersion(),
                     task.contractVersion(), task.schemaVersion(), task.adrVersion(),
@@ -111,12 +114,19 @@ public class McpProjectRuntime {
             ProjectSource projectService, AuditEventRepository auditEvents, ObjectMapper mapper) {
         this(projectService,auditEvents,mapper,null);
     }
-    @org.springframework.beans.factory.annotation.Autowired
     public McpProjectRuntime(ProjectSource projectService, AuditEventRepository auditEvents, ObjectMapper mapper,
             io.refactorcontrolplane.integration.GateEvidencePolicy evidencePolicy) {
+        this(projectService, auditEvents, mapper, evidencePolicy, null);
+    }
+    @org.springframework.beans.factory.annotation.Autowired
+    public McpProjectRuntime(ProjectSource projectService, AuditEventRepository auditEvents, ObjectMapper mapper,
+            io.refactorcontrolplane.integration.GateEvidencePolicy evidencePolicy,
+            io.refactorcontrolplane.governance.EvidenceStore evidenceStore) {
         this.source = projectService;
         this.mapper = mapper;
         this.evidencePolicy = evidencePolicy;
+        this.evidenceStore = evidenceStore;
+        this.modelEvidence = evidenceStore == null ? null : new io.refactorcontrolplane.executor.ExecutionModelEvidence(evidenceStore, mapper);
         if (source.configured()) integrationMergeGuard=taskId -> {
             if (evidencePolicy==null) throw new IllegalStateException("Evidence verifier is unavailable");
             evidencePolicy.requireSingleTaskProposal(taskId);
@@ -206,7 +216,7 @@ public class McpProjectRuntime {
             view.put("owner", assignmentOwners.get(id));
             view.put("gateEvidence",Map.copyOf(gateEvidence.getOrDefault(id,Map.of())));
             Execution execution = executions.get(id);
-            if (execution != null && executorRuns.containsKey(execution.executionId())) view.put("executor", executorRuns.get(execution.executionId()));
+            if (execution != null && executorRuns.containsKey(execution.executionId())) view.put("executor", executorRun(execution.executionId()));
             view.put("claimable", source.approved() && !reconciliationRequired && project.task(id).status() == WorkPackageStatus.READY
                     && eligible(id) && capacityBlockers(id).isEmpty());
             view.put("dependencies", dependencies.getOrDefault(id, Set.of()).stream().sorted().toList());
@@ -273,6 +283,21 @@ public class McpProjectRuntime {
     }
 
     public synchronized JsonNode prepareWrite(String name, JsonNode input) {
+        if (source.configured() && Set.of("publish_contract_change", "publish_schema_change").contains(name))
+            semanticPublication(requiredText(input, "taskId"), name.equals("publish_contract_change") ? SemanticAsset.API_CONTRACT : SemanticAsset.DB_SCHEMA, input);
+        if (name.equals("executor:observe")) {
+            io.refactorcontrolplane.executor.ExecutorModelRun.validate(input.path("result"));
+            try {
+                var result = mapper.treeToValue(input.path("result"), ExecutionProtocol.Result.class);
+                if (result.modelRuns() != null && !result.modelRuns().isEmpty()) {
+                    if (modelEvidence == null) throw new IllegalStateException("Model evidence storage is unavailable");
+                    var run = executorRun(requiredText(input, "taskExecutionId"));
+                    if (run == null) throw new IllegalStateException("Unknown executor run");
+                    modelEvidence.validate(run.request(), result);
+                }
+            }
+            catch (java.io.IOException ex) { throw new IllegalArgumentException("Invalid executor result", ex); }
+        }
         var arguments = input.deepCopy();
         var prepared = (com.fasterxml.jackson.databind.node.ObjectNode) arguments;
         prepared.put("_journalVersion", 2);
@@ -363,6 +388,12 @@ public class McpProjectRuntime {
 
     private Map<String, Object> publish(String taskId, SemanticAsset asset, JsonNode arguments) {
         Set<String> affected = textSet(arguments.path("affectedTaskIds"));
+        String sourceEvidence = null;
+        if (source.configured() && asset != SemanticAsset.ARCHITECTURE_DECISION) {
+            var publication = semanticPublication(taskId, asset, arguments); affected = publication.affected();
+            try { sourceEvidence = evidenceStore.append(publication.key(), publication.binding(), "SEMANTIC_SOURCE_CHANGE", assignmentOwners.get(taskId), publication.content()).id(); }
+            catch (RuntimeException ex) { throw new ReconciliationRequiredException("Semantic evidence write requires reconciliation", ex); }
+        }
         if (affected.isEmpty()) affected = Set.of(taskId);
         affected = downstreamClosure(affected);
         project.publishSemanticChange(
@@ -371,8 +402,48 @@ public class McpProjectRuntime {
                 affected,
                 requiredText(arguments, "idempotencyKey") + ":domain");
         affected.forEach(this::releaseExecutionLeases);
+        if (sourceEvidence != null) {
+            project.recordEvidence(requiredText(arguments, "idempotencyKey") + ":source", taskId,
+                    Map.of("sourceEvidenceRef", sourceEvidence, "asset", asset.name(), "executionId", executions.get(taskId).executionId(), "commitSha", executions.get(taskId).commitSha()));
+            return Map.of("published", true, "affectedTaskIds", affected, "contextVersion", project.contextVersion(), "sourceEvidenceRef", sourceEvidence);
+        }
         return Map.of("published", true, "affectedTaskIds", affected,
                 "contextVersion", project.contextVersion());
+    }
+
+    private record SemanticPublication(String key, io.refactorcontrolplane.governance.EvidenceStore.Binding binding,
+            Set<String> affected, JsonNode content) {}
+    private SemanticPublication semanticPublication(String taskId, SemanticAsset asset, JsonNode arguments) {
+        var binding = evidenceBinding(taskId);
+        if (!binding.executionId().equals(requiredText(arguments, "taskExecutionId")) || !binding.commitSha().equals(requiredText(arguments, "commitSha")))
+            throw new IllegalStateException("Semantic publication requires the exact submitted execution and commit");
+        Set<String> resources = boundedStrings(arguments.path("resourceIds")), artifacts = boundedStrings(arguments.path("artifactPaths"));
+        if (!source.semanticResources(taskId, asset.name()).containsAll(resources)) throw new SecurityException("Semantic resources are not declared for this task");
+        Execution execution = executions.get(taskId);
+        var changed = git.verifiedChangedPaths(repository, execution.worktree(), execution.commitSha());
+        if (!changed.containsAll(artifacts) || artifacts.stream().anyMatch(path -> !path.equals(pathPolicy.normalize(path))))
+            throw new IllegalArgumentException("Semantic artifacts must be exact paths changed by the submitted execution");
+        var consumers = new LinkedHashSet<>(textSet(arguments.path("affectedTaskIds"))); consumers.addAll(source.semanticConsumers(resources));
+        Set<String> affected = downstreamClosure(consumers); affected.forEach(project::task);
+        var content = mapper.createObjectNode().put("provenance", "TASK_DECLARED_SOURCE_LINK").put("asset", asset.name())
+                .put("assetVersion", arguments.path("assetVersion").asLong(project.contextVersion() + 1));
+        content.set("resourceIds", mapper.valueToTree(resources.stream().sorted().toList()));
+        content.set("artifactPaths", mapper.valueToTree(artifacts.stream().sorted().toList()));
+        content.set("affectedTaskIds", mapper.valueToTree(affected.stream().sorted().toList()));
+        if (evidenceStore == null) throw new IllegalStateException("Semantic evidence storage is unavailable");
+        String key = "semantic:" + io.refactorcontrolplane.executor.ExecutorSettings.hash(requiredText(arguments, "idempotencyKey"));
+        evidenceStore.validateAppend(key, binding, "SEMANTIC_SOURCE_CHANGE", assignmentOwners.get(taskId), content);
+        return new SemanticPublication(key, binding, affected, content);
+    }
+
+    private static Set<String> boundedStrings(JsonNode value) {
+        if (!value.isArray() || value.isEmpty() || value.size() > 20) throw new IllegalArgumentException("Supply 1 to 20 semantic resources and artifact paths");
+        var values = new LinkedHashSet<String>();
+        for (var item : value) {
+            if (!item.isTextual() || item.asText().isBlank() || item.asText().length() > 1000 || !values.add(item.asText()))
+                throw new IllegalArgumentException("Semantic references must be distinct nonblank strings");
+        }
+        return Set.copyOf(values);
     }
 
     private SubmissionResult submit(String taskId, JsonNode arguments) {
@@ -453,7 +524,14 @@ public class McpProjectRuntime {
 
     public record CapacityBlocker(String kind, String resourceId, int capacity, long used) {}
 
-    public synchronized ExecutionProtocol.Run executorRun(String id) { return executorRuns.get(id); }
+    public synchronized ExecutionProtocol.Run executorRun(String id) {
+        var run = executorRuns.get(id);
+        if (run != null && (run.modelEvidenceRef() != null || (run.result() != null && run.result().modelRuns() != null && !run.result().modelRuns().isEmpty()))) {
+            if (modelEvidence == null) throw new IllegalStateException("Model evidence verifier is unavailable");
+            modelEvidence.verify(run);
+        }
+        return run;
+    }
     // Local delivery truth, deliberately excluded from durable projections: recovery never redelivers.
     private final Set<String> dispatchingExecutions = new java.util.HashSet<>();
     public synchronized void beginExecutorDelivery(String id) {
@@ -507,6 +585,7 @@ public class McpProjectRuntime {
                 throw new IllegalStateException("Executor result binding or state is invalid");
             if (run.result() != null && result.sequence() <= run.result().sequence()) {
                 if (!result.equals(run.result())) throw new IllegalStateException("Executor result sequence is stale or contradictory");
+                if (run.terminal()) { executorRun(id); return run; }
                 var heartbeat = new ExecutionProtocol.Run(run.request(), result.state(), result); executorRuns.put(id, heartbeat); return heartbeat;
             }
             if (run.terminal()) throw new IllegalStateException("A terminal execution cannot be replaced");
@@ -533,7 +612,13 @@ public class McpProjectRuntime {
             } else if (result.state().equals("FAILED")) {
                 block(taskId); stoppedExecutions.add(id); releaseExecutionLeases(taskId); assignmentEpochs.merge(taskId, 1L, Long::sum);
             }
-            var updated = new ExecutionProtocol.Run(run.request(), result.state(), result);
+            String modelRef = null;
+            if (result.modelRuns() != null && !result.modelRuns().isEmpty()) {
+                if (modelEvidence == null) throw new IllegalStateException("Model evidence storage is unavailable");
+                try { modelRef = modelEvidence.record(run.request(), result, evidenceBinding(taskId)); }
+                catch (RuntimeException ex) { throw new ReconciliationRequiredException("Model evidence write requires reconciliation", ex); }
+            }
+            var updated = new ExecutionProtocol.Run(run.request(), result.state(), result, Instant.now().toString(), modelRef);
             executorRuns.put(id, updated); return updated;
         } catch (java.io.IOException ex) { throw new IllegalArgumentException("Invalid executor payload"); }
     }

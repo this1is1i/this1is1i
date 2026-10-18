@@ -139,6 +139,12 @@ class TaskExecutorApiContractTest {
         var result = JSON.createObjectNode().put("executionId", id).put("requestHash", "wrong-binding")
                 .put("sequence", 2).put("state", "SUCCEEDED").put("commitSha", git(tree, "rev-parse", "HEAD"));
         result.putArray("checks").addObject().put("id", "diff").put("exitCode", 0).put("timedOut", false).put("truncated", false);
+        var modelRequest = new io.refactorcontrolplane.model.ModelRequest("executor-v1", "old source", "remote output", List.of("write_file", "unused_tool"));
+        var modelOutput = new io.refactorcontrolplane.model.MockModelGateway().execute(modelRequest);
+        var modelRun = result.putArray("modelRuns").addObject().put("id", "call-1").put("model", modelOutput.audit().model())
+                .put("promptVersion", modelRequest.promptVersion()).put("inputHash", io.refactorcontrolplane.executor.ExecutorSettings.hash(JSON.writeValueAsString(modelRequest)))
+                .put("contextHash", modelOutput.audit().contextHash()).put("outputHash", modelOutput.audit().outputHash()).put("totalTokens", modelOutput.audit().totalTokens());
+        modelRun.set("requestedTools", JSON.valueToTree(modelRequest.tools())); modelRun.putArray("toolCalls");
         response.set(result);
         mvc.perform(post("/api/v1/executions/" + id + "/refresh").header("Authorization", "Bearer developer-test-token"))
                 .andExpect(status().isConflict());
@@ -157,7 +163,15 @@ class TaskExecutorApiContractTest {
         assertNull(((McpProjectRuntime.Execution) runtime.task("HTTP-1").get("execution")).commitSha());
         runtime.restore(new McpProjectRuntime.Projection(snapshot.project(), List.of(), snapshot.executions(),
                 snapshot.assignmentOwners(), snapshot.assignmentEpochs(), snapshot.stoppedExecutions(), snapshot.executorRuns()));
-        assertEquals("SUCCEEDED", refresh(id).path("state").asText());
+        var completed = refresh(id);
+        assertEquals("SUCCEEDED", completed.path("state").asText());
+        String modelEvidence = completed.path("modelEvidenceRef").asText();
+        assertTrue(modelEvidence.matches("[a-f0-9]{64}"), "Submitted model receipts must have immutable evidence");
+        var persisted = new io.refactorcontrolplane.governance.EvidenceStore(jdbc, JSON).read(source.planScope(), modelEvidence);
+        assertEquals(id, persisted.binding().executionId());
+        assertEquals(result.path("commitSha").asText(), persisted.binding().commitSha());
+        assertEquals("EXECUTOR_REPORTED", persisted.content().path("provenance").asText());
+        assertEquals(result.path("modelRuns"), persisted.content().path("modelRuns"));
         assertEquals(before + 1, posts.get()); assertEquals(base, git(repo, "rev-parse", "main"));
         String audit = jdbc.queryForList("SELECT payload FROM audit_event", String.class).toString();
         assertFalse(audit.contains("local-test-secret"));

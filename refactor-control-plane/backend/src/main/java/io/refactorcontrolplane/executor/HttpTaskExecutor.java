@@ -33,6 +33,7 @@ public final class HttpTaskExecutor implements TaskExecutor {
             if (response.statusCode() == 404 && !submit) return null;
             if (response.statusCode() < 200 || response.statusCode() >= 300) return null;
             var json = mapper.readTree(response.body());
+            ExecutorModelRun.validate(json);
             if (!json.path("sequence").isIntegralNumber() || !json.path("sequence").canConvertToLong())
                 throw new IllegalStateException("Executor sequence must be an integer");
             if (json.has("checks")) {

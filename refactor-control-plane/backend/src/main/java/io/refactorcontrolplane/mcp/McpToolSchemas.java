@@ -39,6 +39,10 @@ public final class McpToolSchemas {
             }
             case "publish_contract_change", "publish_schema_change", "record_architecture_decision" -> {
                 fields.put("assetVersion", POSITIVE); fields.put("affectedTaskIds", array(NONBLANK));
+                if (!tool.equals("record_architecture_decision")) {
+                    fields.put("taskExecutionId", NONBLANK); fields.put("commitSha", NONBLANK);
+                    fields.put("resourceIds", array(NONBLANK)); fields.put("artifactPaths", array(NONBLANK));
+                }
             }
             case "submit_changeset" -> {
                 fields.put("commitSha", NONBLANK); required.add("commitSha");
@@ -75,7 +79,8 @@ public final class McpToolSchemas {
             case "heartbeat" -> lease();
             case "release_paths" -> object(Map.of("released", BOOL));
             case "publish_contract_change", "publish_schema_change", "record_architecture_decision" ->
-                    object(Map.of("published", BOOL, "affectedTaskIds", STRINGS, "contextVersion", POSITIVE));
+                    object(Map.of("published", BOOL, "affectedTaskIds", STRINGS, "contextVersion", POSITIVE, "sourceEvidenceRef", TEXT),
+                            List.of("published", "affectedTaskIds", "contextVersion"));
             case "submit_changeset" -> object(Map.of("accepted", BOOL, "unauthorizedPaths", STRINGS));
             case "report_blocker" -> object(Map.of("blocked", BOOL, "task", task));
             case "report_change_event" -> object(Map.of("recorded", BOOL, "task", task, "taskId", TEXT,

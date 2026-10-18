@@ -1,0 +1,196 @@
+{
+  "scope": "9B local HTTP worker, mock model, real Git, platform verification and file-H2 recovery",
+  "modelProvenance": "EXECUTOR_REPORTED",
+  "backendTests": [
+    {
+      "class": "api.GateEvidenceApiContractTest",
+      "tests": 1,
+      "timestamp": null
+    },
+    {
+      "class": "api.TaskExecutorApiContractTest",
+      "tests": 3,
+      "timestamp": null
+    },
+    {
+      "class": "executor.ExecutionModelEvidenceContractTest",
+      "tests": 1,
+      "timestamp": null
+    },
+    {
+      "class": "executor.ExecutorConflictAcceptanceTest",
+      "tests": 8,
+      "timestamp": null
+    },
+    {
+      "class": "executor.ExecutorConcurrencyAcceptanceTest",
+      "tests": 2,
+      "timestamp": null
+    },
+    {
+      "class": "executor.HttpExecutorModelTraceContractTest",
+      "tests": 4,
+      "timestamp": null
+    },
+    {
+      "class": "governance.EvidenceStoreContractTest",
+      "tests": 4,
+      "timestamp": null
+    },
+    {
+      "class": "mcp.McpSchemaContractTest",
+      "tests": 6,
+      "timestamp": null
+    },
+    {
+      "class": "mcp.McpRuntimeRecoveryContractTest",
+      "tests": 3,
+      "timestamp": null
+    }
+  ],
+  "additionalRevalidation": {
+    "tests": 2,
+    "timestamp": null,
+    "countedAgain": false
+  },
+  "scenarios": [
+    {
+      "commit": "36e04f08280ac17e23d4d3835e9a43672cd4408e",
+      "executionId": "26e8a8e2-e855-4d35-abf6-498ce76cba03",
+      "modelCalls": 1,
+      "modelEvidenceRef": "f40d12cbe98b8f7e79aa51944148bbcb78756b86821e9a1a6736dbdc79f8c685",
+      "httpPuts": 1,
+      "scenario": "model-recovery-true",
+      "verifiedAt": "2026-10-18T02:45:08.760073900Z",
+      "planScope": "2172fb2813e86270f0d7b5c6071cc6321b360bf6f75b1b2eb748128cc7837814",
+      "baseCommit": "abf0d1d51c2e5782b981b17d397a3a24cc9d7d55",
+      "mainAfter": "abf0d1d51c2e5782b981b17d397a3a24cc9d7d55"
+    },
+    {
+      "commit": "043665ec0d56a7cd1b1a9f563c41a2eedcb3f1c1",
+      "executionId": "d5c3160e-40b1-4e1f-957c-210e1af4cfe5",
+      "modelCalls": 1,
+      "modelEvidenceRef": "2414a22c3ab87ca2ba81bfc0c39ce2db3b367343a62edef0bfe46b35c30ce3c9",
+      "httpPuts": 1,
+      "scenario": "model-recovery-false",
+      "verifiedAt": "2026-10-18T02:45:18.765851100Z",
+      "planScope": "f506913914a8bb9be0c67f6cbcb44cd728325caa6fa7d901dd80cdab1415cc99",
+      "baseCommit": "c7f33b630c3ba783c6f76257890f30993c679849",
+      "mainAfter": "c7f33b630c3ba783c6f76257890f30993c679849"
+    },
+    {
+      "executions": [
+        "12b15acf-67b0-434a-a231-d79969701a12",
+        "423b1146-a9a6-42ed-bee9-bee667ec5ac8"
+      ],
+      "scenario": "text-conflict",
+      "verifiedAt": "2026-10-18T02:47:06.862518600Z",
+      "planScope": "fd404bc84c39c3f0b784c787b2d8b05eed31a75a5bc6ced827cca72900c478d1",
+      "baseCommit": "766f820d36084d76382f58cd7d1a82b6c4ec41d3",
+      "mainAfter": "766f820d36084d76382f58cd7d1a82b6c4ec41d3",
+      "candidate": {
+        "id": "1a8f0190-823e-42c4-acea-5dd41664eada",
+        "fingerprint": "2e217995f5e744a68ba6301f47d49b76c5f90029e60ba07bd77aeb9823871c89",
+        "state": "CONFLICTED",
+        "combinedCommit": null,
+        "conflictingPaths": [
+          "api/value.txt"
+        ],
+        "inputs": [
+          {
+            "taskId": "A",
+            "executionId": "12b15acf-67b0-434a-a231-d79969701a12",
+            "commitSha": "9f32bdc8e515d78cdfe4ed02ee37176957b9fde7"
+          },
+          {
+            "taskId": "C",
+            "executionId": "423b1146-a9a6-42ed-bee9-bee667ec5ac8",
+            "commitSha": "f110230b5005e3ce897ad3203d5c13480ef89296"
+          }
+        ]
+      }
+    },
+    {
+      "scenario": "behavior-conflict",
+      "verifiedAt": "2026-10-18T02:45:48.329758600Z",
+      "planScope": "34ccec902997a39e16981bc96258b61974b1d57dd7ab34099707a0f5227bfcdf",
+      "baseCommit": "667e0bf173777d28bfaaa74efcf901a9987c3ebc",
+      "mainAfter": "667e0bf173777d28bfaaa74efcf901a9987c3ebc",
+      "candidate": {
+        "id": "6dce6452-831e-4a00-b514-d1320414d1b5",
+        "fingerprint": "7ca7089993d15ec930bffa0de0d16c00eb9298d4514c454aace08a8ab2fa9a2a",
+        "state": "READY",
+        "combinedCommit": "337c2ad504cd4db822e10484837c38896cbc84a6",
+        "conflictingPaths": [],
+        "inputs": [
+          {
+            "taskId": "A",
+            "executionId": "b49f715f-272c-4d3e-8ed7-82ceb79e548b",
+            "commitSha": "312c9566c20bd682a649e1587684c1a01626e91d"
+          },
+          {
+            "taskId": "B",
+            "executionId": "747b592b-c0fb-44fd-82d6-44a377e64f50",
+            "commitSha": "f3af836343aca88f6f6189f4e1b1ecd04fa6d0ad"
+          }
+        ]
+      },
+      "validation": {
+        "id": "2c15e04d-726a-47ae-8bb9-7b2fc2bc4fe0",
+        "fingerprint": "7ca7089993d15ec930bffa0de0d16c00eb9298d4514c454aace08a8ab2fa9a2a",
+        "commitSha": "337c2ad504cd4db822e10484837c38896cbc84a6",
+        "state": "FAILED",
+        "checks": [
+          {
+            "checkId": "diff",
+            "exitCode": 0,
+            "timedOut": false,
+            "truncated": false
+          },
+          {
+            "checkId": "behavior",
+            "exitCode": 1,
+            "timedOut": false,
+            "truncated": false
+          }
+        ]
+      }
+    },
+    {
+      "publisherExecution": "c9b7a04a-0e39-4c7b-8b84-5b800ae54aa3",
+      "oldCandidate": "1af0d88a-bd26-4bee-833c-4e4c277e5bf8",
+      "revalidatedExecution": "f1e44679-a8b6-4de7-ae83-d73369bdab5b",
+      "sourceEvidenceRef": "3398f66abef51a05ce17a095d537ceeb723ddc7f848f9272e4105f29044b6c57",
+      "revalidatedCommit": "1057b8121b161e62eff7dd69effdef8114bca80f",
+      "publisherCommit": "f5fa61611a24e22ead38a5d9be81374e073bb6b6",
+      "invalidatedExecutions": [
+        "57a87aff-6863-48e0-9510-ea620639e5f5",
+        "b46719a1-0949-48b8-981b-8c43d5fe051e"
+      ],
+      "revalidatedModelEvidence": "e7989a2929649c5cb3b8f79aa5be358846d99d87f52b3cff9f02b21caa6ed4dd",
+      "scenario": "semantic-CONTRACT",
+      "verifiedAt": "2026-10-18T02:48:23.286333900Z",
+      "planScope": "8b4155e4dc9a0ceffae4236289835c5b3905ac4e57cf856319ae2d2e49f06e0c",
+      "baseCommit": "b679d9fe4d1a7086e68841bcbaf483d12babf970",
+      "mainAfter": "b679d9fe4d1a7086e68841bcbaf483d12babf970"
+    },
+    {
+      "publisherExecution": "fc73a88b-b02b-4fb1-9ab6-dc31e62522ee",
+      "oldCandidate": "7881cd01-ce19-4a3a-a669-6490e480174e",
+      "revalidatedExecution": "5b665693-2f0f-4571-a19d-4aee6679146f",
+      "sourceEvidenceRef": "63b113964ff7ad8f2069b47d64f6201ba21c405788fb36a1bdbf9fc7902c0c2f",
+      "revalidatedCommit": "0c90160ae6c20b4a2cf32337210ff7b409be2817",
+      "publisherCommit": "f0b8042c55e9521a1e88e5c358113451f3fae3ac",
+      "invalidatedExecutions": [
+        "35320f78-b62d-4f6c-8fb9-ce61ef6b1404",
+        "2d809a07-ed11-4a39-a5a1-41e596c0999f"
+      ],
+      "revalidatedModelEvidence": "2b4414d8de1275a1cfa97b7c3fcbbf8446ba0dc5b42135235ee71c5d1d38ae4c",
+      "scenario": "semantic-SCHEMA",
+      "verifiedAt": "2026-10-18T02:48:57.528302400Z",
+      "planScope": "7e8b87f5e71c2da9a9d576cf29174ecff72939f4792b53227354f4b559af7169",
+      "baseCommit": "36f38533abe4140665da30230fb521e2185eef3d",
+      "mainAfter": "36f38533abe4140665da30230fb521e2185eef3d"
+    }
+  ]
+}
