@@ -24,3 +24,15 @@ CREATE TABLE IF NOT EXISTS modern_articles (
     FOREIGN KEY(menu_id) REFERENCES article_menus(id),
     UNIQUE(menu_id, slug)
 ) ENGINE=InnoDB DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_bin;
+
+CREATE TABLE IF NOT EXISTS article_migration_lock(id INT PRIMARY KEY, source_identity VARCHAR(64)) ENGINE=InnoDB DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_bin;
+INSERT INTO article_migration_lock(id) SELECT 1 WHERE NOT EXISTS(SELECT 1 FROM article_migration_lock WHERE id=1);
+CREATE TABLE IF NOT EXISTS legacy_post_import(
+    legacy_id BIGINT PRIMARY KEY, article_id BIGINT NOT NULL UNIQUE,
+    source_fingerprint VARCHAR(64) NOT NULL, target_fingerprint VARCHAR(64) NOT NULL,
+    source_json LONGTEXT NOT NULL, policy_json LONGTEXT NOT NULL
+) ENGINE=InnoDB DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_bin;
+CREATE TABLE IF NOT EXISTS article_migration_run(
+    fingerprint VARCHAR(64) PRIMARY KEY, actor VARCHAR(100) NOT NULL,
+    source_count INT NOT NULL, imported_count INT NOT NULL
+) ENGINE=InnoDB DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_bin;

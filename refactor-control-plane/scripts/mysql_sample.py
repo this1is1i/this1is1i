@@ -26,8 +26,8 @@ def new_destination(value):
     return path
 
 
-def verify_workspace():
-    app=(ROOT/'samples/article-app').resolve()
+def verify_workspace(app=None):
+    app=Path(app or ROOT/'samples/article-app').resolve()
     if not app.is_relative_to(ROOT) or app==ROOT:
         raise ValueError('Article sample must remain inside this project')
     for path in [app/'backend',app/'backend/target']:
@@ -36,6 +36,7 @@ def verify_workspace():
             raise ValueError('Sample build roots and output must remain inside the sample')
     if not (ROOT/'backend/.m2-repository').resolve().is_relative_to(ROOT):
         raise ValueError('Dependency cache must remain inside this project')
+    return app
 
 
 def statement(sql, prefix):
@@ -73,8 +74,8 @@ def execute(argv, cwd=ROOT, text=None, timeout=60, capture=True):
 
 
 class Fixture:
-    def __init__(self, destination, mysqld, mysql):
-        verify_workspace()
+    def __init__(self, destination, mysqld, mysql, app=None):
+        self.app=verify_workspace(app)
         self.path = new_destination(destination)
         self.server = Path(mysqld).resolve(strict=True)
         self.client = Path(mysql).resolve(strict=True)
@@ -126,17 +127,18 @@ class Fixture:
                 time.sleep(0.1)
         else:
             raise RuntimeError('MySQL startup outcome is unknown; inspect manifest and process before retrying')
-        self.query(f"CREATE DATABASE article_source CHARACTER SET utf8mb4; CREATE DATABASE article_target CHARACTER SET utf8mb4 COLLATE utf8mb4_bin; CREATE USER 'article_app'@'127.0.0.1' IDENTIFIED BY '{application_password}'; CREATE USER 'article_reader'@'127.0.0.1' IDENTIFIED BY '{reader_password}'; GRANT SELECT,INSERT,UPDATE,DELETE ON article_target.* TO 'article_app'@'127.0.0.1'; GRANT SELECT ON article_source.* TO 'article_reader'@'127.0.0.1';")
+        self.query(f"CREATE DATABASE article_source CHARACTER SET utf8mb4; CREATE DATABASE article_target CHARACTER SET utf8mb4 COLLATE utf8mb4_bin; CREATE DATABASE article_failure CHARACTER SET utf8mb4 COLLATE utf8mb4_bin; CREATE USER 'article_app'@'127.0.0.1' IDENTIFIED BY '{application_password}'; CREATE USER 'article_reader'@'127.0.0.1' IDENTIFIED BY '{reader_password}'; GRANT SELECT,INSERT,UPDATE,DELETE ON article_target.* TO 'article_app'@'127.0.0.1'; GRANT SELECT,INSERT,UPDATE,DELETE ON article_failure.* TO 'article_app'@'127.0.0.1'; GRANT SELECT ON article_source.* TO 'article_reader'@'127.0.0.1';")
         source = ROOT / 'samples/workspaces/springmvc-blog'
         blob = execute(['git', '--no-replace-objects', '--no-lazy-fetch', '-C', source, 'show', PIN + ':Blog/src/main/resources/db/blogdb.sql'])
         if blob.returncode:
             raise RuntimeError('Pinned local source object is required; no fetch is performed')
-        self.query('USE article_source; SET NAMES utf8mb4; ' + statement(blob.stdout, 'CREATE TABLE IF NOT EXISTS `posts`') + '\n' + statement(blob.stdout, 'INSERT INTO `posts`'))
-        schema = (ROOT / 'samples/article-app/backend/src/main/resources/schema-mysql.sql').read_text(encoding='utf-8')
+        self.query('USE article_source; SET NAMES utf8mb4; ' + '\n'.join(statement(blob.stdout, prefix + '`' + table + '`') for table in ['blogs','menus','blogsmenus','posts'] for prefix in ['CREATE TABLE IF NOT EXISTS ', 'INSERT INTO ']))
+        schema = (self.app / 'backend/src/main/resources/schema-mysql.sql').read_text(encoding='utf-8')
         self.query('USE article_target; ' + schema)
+        self.query('USE article_failure; ' + schema + ' ALTER TABLE legacy_post_import ADD CONSTRAINT fixture_failure CHECK(legacy_id<>16);')
         suffix = '?connectionTimeZone=UTC&forceConnectionTimeZoneToSession=true&preserveInstants=true&allowPublicKeyRetrieval=true&sslMode=DISABLED'
         # Loopback-only disposable fixture; production profile has no implicit credentials or TLS downgrade.
-        settings = f'spring.datasource.url=jdbc:mysql://127.0.0.1:{self.port}/article_target{suffix}\nspring.datasource.username=article_app\nspring.datasource.password={application_password}\nspring.datasource.driver-class-name=com.mysql.cj.jdbc.Driver\nspring.sql.init.mode=never\narticle.fixture.source.url=jdbc:mysql://127.0.0.1:{self.port}/article_source{suffix}\narticle.fixture.source.username=article_reader\narticle.fixture.source.password={reader_password}\n'
+        settings = f'spring.datasource.url=jdbc:mysql://127.0.0.1:{self.port}/article_target{suffix}\nspring.datasource.username=article_app\nspring.datasource.password={application_password}\nspring.datasource.driver-class-name=com.mysql.cj.jdbc.Driver\nspring.sql.init.mode=never\narticle.fixture.failure.url=jdbc:mysql://127.0.0.1:{self.port}/article_failure{suffix}\narticle.fixture.source.url=jdbc:mysql://127.0.0.1:{self.port}/article_source{suffix}\narticle.fixture.source.username=article_reader\narticle.fixture.source.password={reader_password}\n'
         (self.path / 'application.properties').write_text(settings, encoding='utf-8')
         self.manifest.update(state='READY', serverPid=int((self.path/'server.pid').read_text(encoding='utf-8').strip()), sourceSqlSha256=hashlib.sha256(blob.stdout.encode('utf-8')).hexdigest(), sourceRows=int(self.query('SELECT COUNT(*) FROM article_source.posts')))
         self.save_manifest()
@@ -165,8 +167,8 @@ class Fixture:
 
 
 def verify(fixture):
-    verify_workspace()
-    backend = ROOT / 'samples/article-app/backend'
+    verify_workspace(fixture.app)
+    backend = fixture.app / 'backend'
     maven = shutil.which('mvn.cmd' if os.name == 'nt' else 'mvn')
     if not maven:
         raise ValueError('An installed Maven is required')
@@ -181,7 +183,7 @@ def verify(fixture):
     if not report_directory.is_dir():
         raise RuntimeError('No fresh reports were produced by this fixture run')
     reports = []
-    for name in ['ArticleApiContractTest', 'ArticleDatabaseContractTest', 'MySqlEngineContractTest', 'ArticleBehaviorContractTest', 'ArticleSessionContractTest', 'ArticleLoginContractTest']:
+    for name in ['ArticleApiContractTest', 'ArticleDatabaseContractTest', 'MySqlEngineContractTest', 'ArticleBehaviorContractTest', 'ArticleSessionContractTest', 'ArticleLoginContractTest', 'MySqlMigrationContractTest']:
         report=report_directory/('TEST-example.article.'+name+'.xml')
         if not report.is_file():
             raise RuntimeError('A required fresh report is missing')
@@ -191,8 +193,12 @@ def verify(fixture):
         if row['tests']<1 or row['failures'] or row['errors'] or row['skipped'] or properties.get('article.mysql.config')!=str(fixture.path/'application.properties'):
             raise RuntimeError('MySQL acceptance did not pass every required test')
         reports.append(row)
-    result = {'scope': '10B1 owned article behavior and soft deletion; independent legacy migration and governed acceptance remain pending', 'serverVersion': fixture.manifest['serverVersion'], 'sourceCommit': PIN,
-              'sourceSqlSha256': fixture.manifest['sourceSqlSha256'], 'sourceRows': fixture.manifest['sourceRows'], 'tests': reports, 'jvmZone': 'Pacific/Auckland', 'governanceDatabaseTouched': False}
+    mappings=json.loads((fixture.path/'migration-mappings.json').read_text(encoding='utf-8'))
+    if len(mappings['mappings'])!=7 or not all(mappings[key] for key in ['rollbackVerified','sourceUnchanged','deletedTargetPreserved']):
+        raise RuntimeError('Required fixed-source migration evidence is missing')
+    result = {'scope': 'Milestone10 article behavior and independent read-only source migration; governance binding supplied by caller', 'serverVersion': fixture.manifest['serverVersion'], 'sourceCommit': PIN,
+              'sourceSqlSha256': fixture.manifest['sourceSqlSha256'], 'sourceRows': fixture.manifest['sourceRows'], 'tests': reports, 'jvmZone': 'Pacific/Auckland', 'governanceDatabaseTouched': False,
+              'migration':mappings}
     (fixture.path / 'evidence.json').write_text(json.dumps(result, indent=2) + '\n', encoding='utf-8')
     return result
 
@@ -202,8 +208,9 @@ def main():
     parser.add_argument('--mysqld', type=Path, required=True)
     parser.add_argument('--mysql', type=Path, required=True)
     parser.add_argument('--destination', type=Path, required=True)
+    parser.add_argument('--app',type=Path,default=ROOT/'samples/article-app')
     args = parser.parse_args()
-    fixture = Fixture(args.destination, args.mysqld, args.mysql)
+    fixture = Fixture(args.destination, args.mysqld, args.mysql,args.app)
     try:
         fixture.start()
         result = verify(fixture)

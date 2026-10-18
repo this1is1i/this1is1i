@@ -2,6 +2,7 @@ openapi: 3.1.0
 info:
   title: Article Migration Slice API
   version: 1.1.0
+  description: Historical platform demo only. Configured mode has no article endpoints. The independent milestone-10 API is documented in samples/article-app/README.md.
 paths:
   /api/articles:
     get:

@@ -4,7 +4,7 @@
 
 ## 当前接续点（2026-10-18）
 
-第 7、8、9 里程碑、10A 独立 MySQL 存储基线及 10B1 文章行为已完成，下一阶段是 10B2 独立迁移工具；完整第 10 里程碑和 MVP 尚未完成。新会话先读 [开发交接](docs/session-handoff.md)、[当前状态](docs/status.md)及[业务决定](docs/article-business-decisions.md)。用户已明确批准保留 MySQL、按博客归属隔离、原 HTML 白名单展示、稳定旧 URL，以及可改标题/正文/状态但 URL/归属不变，不重复询问。用户现已明确批准软删除，不重复询问。10B1 真实 MySQL 20 项、H2 17 项（重叠不累加）、前端 16 项、Python 11 项及构建通过，详见 docs/acceptance/milestone10b1-article-behavior.md。旧格式路径夹具不等于七行旧数据已迁移；10B2 必须保留映射并拒绝覆盖已编辑/软删除目标。只补后续受影响检查。
+第 7–10 里程碑已完成；10B2 独立迁移与 10C 受管验收见 docs/acceptance/milestone10-article.md。下一阶段为第 11 里程碑整体 MVP 发布复验，完整 MVP 尚未完成。新会话先读 [开发交接](docs/session-handoff.md)、[当前状态](docs/status.md)及[业务决定](docs/article-business-decisions.md)。用户已明确批准保留 MySQL、按博客归属隔离、原 HTML 白名单展示、稳定旧 URL，以及可改标题/正文/状态但 URL/归属不变，不重复询问。用户现已明确批准软删除，不重复询问。10B1 真实 MySQL 20 项、H2 17 项（重叠不累加）、前端 16 项、Python 11 项及构建通过，详见 docs/acceptance/milestone10b1-article-behavior.md。10B2/10C 最新候选验证真实 MySQL 21 项、另 6 项 H2、前端 16 项、Python 13 项通过；七行旧数据已对照，映射/原时间与已编辑/软删除保护已验收。候选 5da8f5ef-2979-4eb8-85a7-15cc7e0ba24c 的验证和审计均可复算，测试主体不冒充生产人工签署。只补后续受影响检查。
 
 此前第六期至 9A 的成果保存提交为 `ed298f1`，9B 为 `2b8c34c`。用户于 2026-10-18 明确批准推送到 `https://github.com/this1is1i/this1is1i.git` 的 `main`；两项成果及其前置提交均已推送，远端 SHA 已与本地核对一致。后续先读取真实 Git 状态，不重复询问同一仓库/main 的已授权保存操作。保留父工作区无关改动，禁止清理或重置用户工作。
 
@@ -72,6 +72,7 @@
 - 模型和语义证据必须在写 PENDING 前复用 EvidenceStore 的纯校验，检查加入平台元数据后的完整 UTF-8 字节、深度与字段边界；用合法大计划和有界 HTTP 响应反例验证不会进入永久对账循环。读取比较使用类型化或规范化值，不以 Jackson IntNode/LongNode 的运行时类型判断语义相等；有证据引用但列表为空仍须拒绝异常绑定。
 - 配置模式门禁请求须核对精确 execution ID 与提交，再从当前运行时生成绑定；测试只采信平台当前候选最新验证，不能使用执行器成功摘要代替。恢复 PENDING 操作前必须安装证据及集成约束，并显式使用计划 scope，禁止依赖恢复之后才执行的服务构造器回调。
 - 审计导出使用不清理租约的纯快照及只读一致性事务；历史人工操作从当条投影关联执行/门禁，不能拿最终状态补历史。候选及验证按精确 scope/kind 读取，模型请求必须属于导出计划；当前模型引用只从当前任务 execution ID 判定。历史绑定的部分匹配不可升级成完整语义验证或当前合并资格，原始嵌套投影字段不直接导出。
+- MySQL 源/目标身份以同连接服务器 UUID、DATABASE() 和服务端大小写规则判断，禁止依赖 JDBC catalog 或原始 URL；必须用 databaseTerm=SCHEMA 别名反例验证独立 schema 与相同 schema 的判断。
 - MySQL 验收只用新建项目 datadir/独立进程，关闭前核对 datadir/端口；运行根和构建输出的解析路径都须在项目内。REST 测试必须断言实际引擎，报告按本轮独立目录、配置绑定、非零执行/零跳过采信，禁止把旧绿报告或 H2 测试当成新的 MySQL 证据。失败先检查实例实际状态，不复用现有数据目录或操作系统服务。
 
 ## 权威文档
@@ -91,7 +92,7 @@
 - `docs/analysis-snapshots.md`：分析证据语义、识别范围与资源边界。
 - `docs/article-migration.md`：本地文章数据迁移、对照与真实旧库验收边界。
 - `docs/article-parity-checklist.md`：固定对象的文章权限、富文本、路由、关联和时间行为；第 10 里程碑待确认事项。
-- `docs/article-business-decisions.md`、`docs/acceptance/milestone10a-mysql.md`：第 10 里程碑已批准决定与 10A 实际引擎验收；10B1 文章行为已通过，10B2/10C 仍待实现；见 `docs/acceptance/milestone10b1-article-behavior.md`，不能以独立业务测试替代迁移或受管候选验收。
+- `docs/article-business-decisions.md`、`docs/acceptance/milestone10a-mysql.md`：第 10 里程碑已批准决定与 10A 实际引擎验收；10B1 文章行为已通过，10B2/10C 现已完成，见 `docs/acceptance/milestone10-article.md`；下一步第 11 里程碑。不能将测试角色门禁升级为真实生产签署。
 - `docs/contracts/project-mcp.md`：MCP 参数、响应及兼容策略。
 - `docs/integration-candidates.md`：真实 Git 组合、冲突返工、本机验证、指纹失效与人工建议 API。
 - `docs/integration-workbench.md`：真实状态工作台、身份权限、组合操作及不确定结果处理。

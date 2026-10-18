@@ -1,0 +1,177 @@
+{
+  "scope": "milestone10 governed isolated acceptance; test roles do not attest actual human approval",
+  "fixture": "D:\\AAWorkSpeace\\this1is1i\\refactor-control-plane\\.runtime\\phase10-accepted",
+  "mainBefore": "5e62608af333b5757bf767e05b19e2b0d56f0afb",
+  "planScope": "0d343456277b00079690c81ca19abc5fe87119854e17c336878f1018fee43c30",
+  "taskCommit": "1db7a8a3c801909ce9fc760298d6bb0c6fa8a6b5",
+  "executionId": "36eed72d-7c64-40be-9525-0155ce284e38",
+  "candidateId": "5da8f5ef-2979-4eb8-85a7-15cc7e0ba24c",
+  "candidateCommit": "951346bb36a29eaf97486ce792bf82543514d202",
+  "candidateFingerprint": "a2b8361fffd25962ef95d7ec2e0bd129ea4d6d1d8cad2d5a7a4d336f0c833ee6",
+  "validationId": "32ac092c-2cb1-492f-b0c6-fca23690c1ec",
+  "validation": {
+    "app": "D:\\AAWorkSpeace\\this1is1i\\refactor-control-plane\\.runtime\\phase10-accepted\\managed\\.refactor-integrations\\5da8f5ef-2979-4eb8-85a7-15cc7e0ba24c\\validation-32ac092c-2cb1-492f-b0c6-fca23690c1ec\\modern\\article-app",
+    "candidateCommit": "951346bb36a29eaf97486ce792bf82543514d202",
+    "mysql": {
+      "scope": "Milestone10 article behavior and independent read-only source migration; governance binding supplied by caller",
+      "serverVersion": "D:\\Database\\MySQL\\MySQL Server 8.0\\bin\\mysqld.exe  Ver 8.0.31 for Win64 on x86_64 (MySQL Community Server - GPL)",
+      "sourceCommit": "5e62608af333b5757bf767e05b19e2b0d56f0afb",
+      "sourceSqlSha256": "74c5104833cfcddbc61b1a28a5049e4b4f615c607f3a491f239bda9b9a586307",
+      "sourceRows": 7,
+      "tests": [
+        {
+          "class": "ArticleApiContractTest",
+          "tests": 4,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "class": "ArticleDatabaseContractTest",
+          "tests": 3,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "class": "MySqlEngineContractTest",
+          "tests": 4,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "class": "ArticleBehaviorContractTest",
+          "tests": 7,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "class": "ArticleSessionContractTest",
+          "tests": 1,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "class": "ArticleLoginContractTest",
+          "tests": 1,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "class": "MySqlMigrationContractTest",
+          "tests": 1,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        }
+      ],
+      "jvmZone": "Pacific/Auckland",
+      "governanceDatabaseTouched": false,
+      "migration": {
+        "targetStatus": "PUBLISHED",
+        "mappings": [
+          {
+            "legacyId": 16,
+            "sourceBlogId": 3,
+            "sourceFingerprint": "e4493675926ac9eff2cc366e70ba1721ff399532808cd07eae006abb8ec542d1",
+            "targetMenuId": 2005,
+            "sourceLocalTime": "2016-12-15T10:44:47",
+            "publicPath": "/eyupgevenim/Anasayfa/Asp-Dot-Net",
+            "targetUtcTime": "2016-12-15T07:44:47Z",
+            "articleId": 18
+          },
+          {
+            "legacyId": 17,
+            "sourceBlogId": 3,
+            "sourceFingerprint": "1ae0d4de48d70514c5baffa2dae1c0e3f78e7e9ad0cf5e39ef0312adfe8ef9ca",
+            "targetMenuId": 2005,
+            "sourceLocalTime": "2016-12-15T10:48:04",
+            "publicPath": "/eyupgevenim/Anasayfa/Cevik-Yazilim",
+            "targetUtcTime": "2016-12-15T07:48:04Z",
+            "articleId": 19
+          },
+          {
+            "legacyId": 18,
+            "sourceBlogId": 3,
+            "sourceFingerprint": "57009120e86c41852875f7c14b75d05f25f5b913450a0b380938bafc688c3b69",
+            "targetMenuId": 2005,
+            "sourceLocalTime": "2016-12-15T11:02:19",
+            "publicPath": "/eyupgevenim/Anasayfa/Man-must-explore-and-this-is-exploration-at-its-greatest",
+            "targetUtcTime": "2016-12-15T08:02:19Z",
+            "articleId": 20
+          },
+          {
+            "legacyId": 22,
+            "sourceBlogId": 8,
+            "sourceFingerprint": "ec3f27c8c6c104bf62395ac65614b7890494db1512fc3f9e270291f02343d91d",
+            "targetMenuId": 2006,
+            "sourceLocalTime": "2016-12-20T09:43:42",
+            "publicPath": "/alpayhoca/Anasayfa/Deneme-Demo-Baslik",
+            "targetUtcTime": "2016-12-20T06:43:42Z",
+            "articleId": 21
+          },
+          {
+            "legacyId": 27,
+            "sourceBlogId": 3,
+            "sourceFingerprint": "80176ac9048d1d71722d28aa782827c13ebccc36f6bd8534b67cf0529b3ccedf",
+            "targetMenuId": 2007,
+            "sourceLocalTime": "2016-12-21T00:08:26",
+            "publicPath": "/eyupgevenim/%C4%B0leti%C5%9Fim/Iletisim",
+            "targetUtcTime": "2016-12-20T21:08:26Z",
+            "articleId": 22
+          },
+          {
+            "legacyId": 28,
+            "sourceBlogId": 3,
+            "sourceFingerprint": "98aa8eefd665dda154d31812427c8cd85749bcde3d12be66d660d905d04bedc0",
+            "targetMenuId": 2005,
+            "sourceLocalTime": "2016-12-21T11:37:44",
+            "publicPath": "/eyupgevenim/Anasayfa/grup-list-demo",
+            "targetUtcTime": "2016-12-21T08:37:44Z",
+            "articleId": 23
+          },
+          {
+            "legacyId": 37,
+            "sourceBlogId": 3,
+            "sourceFingerprint": "1ef603d13f917fa5105e4b7da8d024fb8748ccfeee078098ebe9bb61ca7e8dff",
+            "targetMenuId": 2005,
+            "sourceLocalTime": "2016-12-21T21:32:20",
+            "publicPath": "/eyupgevenim/Anasayfa/Test-Title",
+            "targetUtcTime": "2016-12-21T18:32:20Z",
+            "articleId": 24
+          }
+        ],
+        "sourceZone": "Europe/Istanbul",
+        "concurrentImported": 7,
+        "rollbackVerified": true,
+        "successAudits": 1,
+        "deletedTargetPreserved": true,
+        "sourceUnchanged": true
+      }
+    },
+    "mysqlFixture": "D:\\AAWorkSpeace\\this1is1i\\refactor-control-plane\\.runtime\\phase10-candidate-db-2b2201836cd24ee58f606f1da1616f3c",
+    "fixtureState": "STOPPED",
+    "frontend": "tests, typecheck and production build passed"
+  },
+  "proposal": {
+    "id": "2899a1ad-2c5d-4687-9484-103c6b9b2f89",
+    "candidateId": "5da8f5ef-2979-4eb8-85a7-15cc7e0ba24c",
+    "fingerprint": "a2b8361fffd25962ef95d7ec2e0bd129ea4d6d1d8cad2d5a7a4d336f0c833ee6",
+    "validationId": "32ac092c-2cb1-492f-b0c6-fca23690c1ec",
+    "branch": "refs/heads/codex/integration-5da8f5ef-2979-4eb8-85a7-15cc7e0ba24c",
+    "commitSha": "951346bb36a29eaf97486ce792bf82543514d202",
+    "targetRef": "refs/heads/main",
+    "targetCommit": "5e62608af333b5757bf767e05b19e2b0d56f0afb",
+    "actor": "lead",
+    "createdAt": "2026-10-18T13:06:27.791840800Z",
+    "automaticallyMergeMain": false,
+    "mergePolicy": "HUMAN_ONLY"
+  },
+  "auditPayloadSha256": "101e7e677634d7d1b90c46ab5726a95e9dd13fbfe804b646f4e42bdabd1dbcd4",
+  "mainAfter": "5e62608af333b5757bf767e05b19e2b0d56f0afb",
+  "platformStopped": true
+}

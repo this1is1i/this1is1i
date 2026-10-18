@@ -68,7 +68,7 @@ class MySqlFixtureBoundaryTest(unittest.TestCase):
         module=self.load()
         suite=ET.ElementTree(ET.fromstring('<testsuite tests="3" failures="0" errors="0" skipped="0"/>'))
         with tempfile.TemporaryDirectory(dir=ROOT/'.runtime') as folder:
-            fixture=SimpleNamespace(path=Path(folder),manifest={'serverVersion':'fixture','sourceSqlSha256':'a','sourceRows':7})
+            fixture=SimpleNamespace(path=Path(folder),app=ROOT/'samples/article-app',manifest={'serverVersion':'fixture','sourceSqlSha256':'a','sourceRows':7})
             with patch.dict(sys.modules,{'article_sample':SimpleNamespace(run=lambda *args:None)}), patch.object(module.ET,'parse',return_value=suite):
                 with self.assertRaises(RuntimeError): module.verify(fixture)
 

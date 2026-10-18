@@ -1,0 +1,666 @@
+{
+  "schemaVersion": "refactor-control-plane.audit.v1",
+  "payload": {
+    "automaticallyMergeMain": false,
+    "claimsBoundary": "Historical approvals are facts, not current merge permission. Content hashes are not signatures.",
+    "evidence": [
+      {
+        "author": "lead",
+        "binding": {
+          "adrVersion": 1,
+          "commitSha": "1db7a8a3c801909ce9fc760298d6bb0c6fa8a6b5",
+          "contextVersion": 1,
+          "contractVersion": 1,
+          "executionId": "36eed72d-7c64-40be-9525-0155ce284e38",
+          "planScope": "0d343456277b00079690c81ca19abc5fe87119854e17c336878f1018fee43c30",
+          "schemaVersion": 1,
+          "taskId": "SCAFFOLD"
+        },
+        "content": {
+          "passed": true,
+          "statement": "Fixture role: reviewed approved article slice; migration independent review recorded in milestone10 evidence."
+        },
+        "contentHash": "4b1f34630a5df2a3b6380d776dcc04cc6fe4a591f4018631df8796141f2df92c",
+        "createdAt": "2026-10-18T13:06:08.213711100Z",
+        "executionBinding": "TASK_EXECUTION_COMMIT_MATCHED",
+        "id": "0640c28efe780785a8ed07dbe132794bac8230085731632090a7dd166ca7948d",
+        "integrity": "VERIFIED_CONTENT_HASH",
+        "kind": "CODE_REVIEW",
+        "operationKey": "f5279221-4db5-481a-acb5-fe44ebc344e6",
+        "referenceStatus": "CURRENT_GATE_REFERENCE",
+        "semanticBinding": "DECLARED_NOT_INDEPENDENTLY_REVERIFIED"
+      },
+      {
+        "author": "qa",
+        "binding": {
+          "adrVersion": 1,
+          "commitSha": "1db7a8a3c801909ce9fc760298d6bb0c6fa8a6b5",
+          "contextVersion": 1,
+          "contractVersion": 1,
+          "executionId": "36eed72d-7c64-40be-9525-0155ce284e38",
+          "planScope": "0d343456277b00079690c81ca19abc5fe87119854e17c336878f1018fee43c30",
+          "schemaVersion": 1,
+          "taskId": "SCAFFOLD"
+        },
+        "content": {
+          "candidateId": "5da8f5ef-2979-4eb8-85a7-15cc7e0ba24c",
+          "passed": true,
+          "validationHash": "01edfc487dc410310cd3cde7c62c60f9117fb2de8c8d1b7ab4dc2ab3b4f86e7c",
+          "validationId": "32ac092c-2cb1-492f-b0c6-fca23690c1ec"
+        },
+        "contentHash": "4a48cdb0b58a22701f6f8555506e84dfdf2d275f4ad0ac79b1f514382c806be4",
+        "createdAt": "2026-10-18T13:06:16.453942700Z",
+        "executionBinding": "TASK_EXECUTION_COMMIT_MATCHED",
+        "id": "23c83f4f64c5092ce0394c430ad910e431ac74600524a9b47e2c1bb3ac1ea1c8",
+        "integrity": "VERIFIED_CONTENT_HASH",
+        "kind": "INTEGRATION_TEST",
+        "operationKey": "51656576-0d46-416f-99ea-a1423a296311",
+        "referenceStatus": "CURRENT_GATE_REFERENCE",
+        "semanticBinding": "DECLARED_NOT_INDEPENDENTLY_REVERIFIED"
+      },
+      {
+        "author": "business",
+        "binding": {
+          "adrVersion": 1,
+          "commitSha": "1db7a8a3c801909ce9fc760298d6bb0c6fa8a6b5",
+          "contextVersion": 1,
+          "contractVersion": 1,
+          "executionId": "36eed72d-7c64-40be-9525-0155ce284e38",
+          "planScope": "0d343456277b00079690c81ca19abc5fe87119854e17c336878f1018fee43c30",
+          "schemaVersion": 1,
+          "taskId": "SCAFFOLD"
+        },
+        "content": {
+          "passed": true,
+          "statement": "Fixture role: approved decisions matched actual seven-post migration, ownership, sanitized HTML, stable paths and soft deletion tests; not a production human attestation."
+        },
+        "contentHash": "dd44331f5c682882b952e8d6ab0ceb9a147e0645c4fc755bcc3570f24b078947",
+        "createdAt": "2026-10-18T13:06:19.171566700Z",
+        "executionBinding": "TASK_EXECUTION_COMMIT_MATCHED",
+        "id": "877ae1d086c1424420adf2a11ffadb7efa8bbc620e93d294b2421d7d82910f5e",
+        "integrity": "VERIFIED_CONTENT_HASH",
+        "kind": "BUSINESS_ACCEPTANCE",
+        "operationKey": "047c5dbf-153b-4dbb-87bc-362fe1a7b6b3",
+        "referenceStatus": "CURRENT_GATE_REFERENCE",
+        "semanticBinding": "DECLARED_NOT_INDEPENDENTLY_REVERIFIED"
+      },
+      {
+        "author": "qa",
+        "binding": {
+          "adrVersion": 1,
+          "commitSha": "1db7a8a3c801909ce9fc760298d6bb0c6fa8a6b5",
+          "contextVersion": 1,
+          "contractVersion": 1,
+          "executionId": "36eed72d-7c64-40be-9525-0155ce284e38",
+          "planScope": "0d343456277b00079690c81ca19abc5fe87119854e17c336878f1018fee43c30",
+          "schemaVersion": 1,
+          "taskId": "SCAFFOLD"
+        },
+        "content": {
+          "candidateId": "5da8f5ef-2979-4eb8-85a7-15cc7e0ba24c",
+          "passed": true,
+          "validationHash": "01edfc487dc410310cd3cde7c62c60f9117fb2de8c8d1b7ab4dc2ab3b4f86e7c",
+          "validationId": "32ac092c-2cb1-492f-b0c6-fca23690c1ec"
+        },
+        "contentHash": "4a48cdb0b58a22701f6f8555506e84dfdf2d275f4ad0ac79b1f514382c806be4",
+        "createdAt": "2026-10-18T13:06:12.613835300Z",
+        "executionBinding": "TASK_EXECUTION_COMMIT_MATCHED",
+        "id": "b36750bce92cda6aa7ce7d6fc7ccb9e13cfb80ac8701322e99d5cd594ea45e8d",
+        "integrity": "VERIFIED_CONTENT_HASH",
+        "kind": "UNIT_TEST",
+        "operationKey": "ebeb071b-fa9c-4b20-b701-071273c681a6",
+        "referenceStatus": "CURRENT_GATE_REFERENCE",
+        "semanticBinding": "DECLARED_NOT_INDEPENDENTLY_REVERIFIED"
+      }
+    ],
+    "executions": [
+      {
+        "baseCommit": "5e62608af333b5757bf767e05b19e2b0d56f0afb",
+        "branch": "codex/task-scaffold-36eed72d-7c64-40be-9525-0155ce284e38-052c6c858b48",
+        "commitSha": "1db7a8a3c801909ce9fc760298d6bb0c6fa8a6b5",
+        "executionId": "36eed72d-7c64-40be-9525-0155ce284e38",
+        "taskId": "SCAFFOLD"
+      }
+    ],
+    "executorRuns": [],
+    "historyBoundary": "CURRENT_PLAN_SCOPE_ONLY",
+    "integrations": [
+      {
+        "actor": "lead",
+        "automaticallyMergeMain": false,
+        "branch": "refs/heads/codex/integration-5da8f5ef-2979-4eb8-85a7-15cc7e0ba24c",
+        "candidateId": "5da8f5ef-2979-4eb8-85a7-15cc7e0ba24c",
+        "commitSha": "951346bb36a29eaf97486ce792bf82543514d202",
+        "createdAt": "2026-10-18T13:06:27.791840800Z",
+        "fingerprint": "a2b8361fffd25962ef95d7ec2e0bd129ea4d6d1d8cad2d5a7a4d336f0c833ee6",
+        "id": "2899a1ad-2c5d-4687-9484-103c6b9b2f89",
+        "kind": "proposal",
+        "mergePolicy": "HUMAN_ONLY",
+        "revision": 0,
+        "targetCommit": "5e62608af333b5757bf767e05b19e2b0d56f0afb",
+        "targetRef": "refs/heads/main",
+        "validationId": "32ac092c-2cb1-492f-b0c6-fca23690c1ec"
+      },
+      {
+        "actor": "qa",
+        "candidateId": "5da8f5ef-2979-4eb8-85a7-15cc7e0ba24c",
+        "checks": [
+          {
+            "checkId": "mysql-article-parity",
+            "commandHash": "1e5ddefb7ec5f611dd402771b0be3d9c8a74aff8762c289bc8b8303a92048597",
+            "exitCode": 0,
+            "stderrHash": "12ae32cb1ec02d01eda3581b127c1fee3b0dc53572ed6baf239721a03d82e126",
+            "stdoutHash": "d61a56cf2619e28513e18ff87bb2c2756ff857e6c563632b29f180e54afaa420",
+            "timedOut": false,
+            "truncated": false
+          }
+        ],
+        "commitSha": "951346bb36a29eaf97486ce792bf82543514d202",
+        "completedAt": "2026-10-18T13:06:05.239500400Z",
+        "detailHash": "12ae32cb1ec02d01eda3581b127c1fee3b0dc53572ed6baf239721a03d82e126",
+        "fingerprint": "a2b8361fffd25962ef95d7ec2e0bd129ea4d6d1d8cad2d5a7a4d336f0c833ee6",
+        "id": "32ac092c-2cb1-492f-b0c6-fca23690c1ec",
+        "kind": "validation",
+        "revision": 1,
+        "startedAt": "2026-10-18T13:04:50.822569900Z",
+        "state": "PASSED"
+      },
+      {
+        "actor": "lead",
+        "assembly": {
+          "commit": "951346bb36a29eaf97486ce792bf82543514d202",
+          "conflictingPaths": [],
+          "conflictingTask": null
+        },
+        "id": "5da8f5ef-2979-4eb8-85a7-15cc7e0ba24c",
+        "inputs": [
+          {
+            "adrVersion": 1,
+            "contextVersion": 1,
+            "contractVersion": 1,
+            "execution": {
+              "baseCommit": "5e62608af333b5757bf767e05b19e2b0d56f0afb",
+              "branch": "codex/task-scaffold-36eed72d-7c64-40be-9525-0155ce284e38-052c6c858b48",
+              "commitSha": "1db7a8a3c801909ce9fc760298d6bb0c6fa8a6b5",
+              "executionId": "36eed72d-7c64-40be-9525-0155ce284e38",
+              "taskId": "SCAFFOLD"
+            },
+            "owner": "developer",
+            "schemaVersion": 1,
+            "taskId": "SCAFFOLD"
+          }
+        ],
+        "kind": "candidate",
+        "latestValidation": "32ac092c-2cb1-492f-b0c6-fca23690c1ec",
+        "plan": {
+          "createdAt": "2026-10-18T13:04:45.091719400Z",
+          "fingerprint": "a2b8361fffd25962ef95d7ec2e0bd129ea4d6d1d8cad2d5a7a4d336f0c833ee6",
+          "id": "5da8f5ef-2979-4eb8-85a7-15cc7e0ba24c",
+          "targetCommit": "5e62608af333b5757bf767e05b19e2b0d56f0afb",
+          "targetRef": "refs/heads/main"
+        },
+        "profile": {
+          "id": "sample-build",
+          "version": "1"
+        },
+        "revision": 3,
+        "state": "READY"
+      }
+    ],
+    "observedAt": "2026-10-18T13:06:27.814138200Z",
+    "operations": [
+      {
+        "action": "operator:assign_task",
+        "actor": "manager",
+        "completedAt": "2026-10-18 21:04:37.802553+08",
+        "createdAt": "2026-10-18 21:04:37.586385+08",
+        "execution": {},
+        "gateEvidence": {},
+        "observedTaskState": {
+          "adrVersion": 1,
+          "contextVersion": 1,
+          "contractVersion": 1,
+          "id": "SCAFFOLD",
+          "schemaVersion": 1,
+          "status": "READY"
+        },
+        "operationKey": "fdef816f-daea-4ec7-b16c-ca56b76a8c21",
+        "roles": [
+          "PROJECT_MANAGER"
+        ],
+        "sequence": 1,
+        "status": "COMPLETED",
+        "taskId": "SCAFFOLD",
+        "version": 2
+      },
+      {
+        "action": "claim_task",
+        "actor": "UNKNOWN",
+        "completedAt": "2026-10-18 21:04:38.884928+08",
+        "createdAt": "2026-10-18 21:04:38.004186+08",
+        "execution": {
+          "baseCommit": "5e62608af333b5757bf767e05b19e2b0d56f0afb",
+          "branch": "codex/task-scaffold-36eed72d-7c64-40be-9525-0155ce284e38-052c6c858b48",
+          "commitSha": null,
+          "executionId": "36eed72d-7c64-40be-9525-0155ce284e38",
+          "taskId": "SCAFFOLD"
+        },
+        "gateEvidence": {},
+        "observedTaskState": {
+          "adrVersion": 1,
+          "contextVersion": 1,
+          "contractVersion": 1,
+          "id": "SCAFFOLD",
+          "schemaVersion": 1,
+          "status": "CLAIMED"
+        },
+        "operationKey": "8c18a801-aa64-40a0-96c2-e338ca7c8326",
+        "roles": [],
+        "sequence": 2,
+        "status": "COMPLETED",
+        "taskId": "SCAFFOLD",
+        "version": 2
+      },
+      {
+        "action": "reserve_paths",
+        "actor": "UNKNOWN",
+        "completedAt": "2026-10-18 21:04:39.312646+08",
+        "createdAt": "2026-10-18 21:04:39.086956+08",
+        "execution": {
+          "baseCommit": "5e62608af333b5757bf767e05b19e2b0d56f0afb",
+          "branch": "codex/task-scaffold-36eed72d-7c64-40be-9525-0155ce284e38-052c6c858b48",
+          "commitSha": null,
+          "executionId": "36eed72d-7c64-40be-9525-0155ce284e38",
+          "taskId": "SCAFFOLD"
+        },
+        "gateEvidence": {},
+        "observedTaskState": {
+          "adrVersion": 1,
+          "contextVersion": 1,
+          "contractVersion": 1,
+          "id": "SCAFFOLD",
+          "schemaVersion": 1,
+          "status": "CLAIMED"
+        },
+        "operationKey": "0191b3d5-5a74-4982-adfe-6962f3cb3ac5",
+        "roles": [],
+        "sequence": 3,
+        "status": "COMPLETED",
+        "taskId": "SCAFFOLD",
+        "version": 2
+      },
+      {
+        "action": "submit_changeset",
+        "actor": "UNKNOWN",
+        "commitSha": "1db7a8a3c801909ce9fc760298d6bb0c6fa8a6b5",
+        "completedAt": "2026-10-18 21:04:43.952349+08",
+        "createdAt": "2026-10-18 21:04:41.816191+08",
+        "execution": {
+          "baseCommit": "5e62608af333b5757bf767e05b19e2b0d56f0afb",
+          "branch": "codex/task-scaffold-36eed72d-7c64-40be-9525-0155ce284e38-052c6c858b48",
+          "commitSha": "1db7a8a3c801909ce9fc760298d6bb0c6fa8a6b5",
+          "executionId": "36eed72d-7c64-40be-9525-0155ce284e38",
+          "taskId": "SCAFFOLD"
+        },
+        "gateEvidence": {},
+        "observedTaskState": {
+          "adrVersion": 1,
+          "contextVersion": 1,
+          "contractVersion": 1,
+          "id": "SCAFFOLD",
+          "schemaVersion": 1,
+          "status": "SUBMITTED"
+        },
+        "operationKey": "8444f00e-634c-41de-9e64-b6f5ca13bdc3",
+        "roles": [],
+        "sequence": 4,
+        "status": "COMPLETED",
+        "taskId": "SCAFFOLD",
+        "version": 2
+      },
+      {
+        "action": "operator:start_review",
+        "actor": "lead",
+        "commitSha": "1db7a8a3c801909ce9fc760298d6bb0c6fa8a6b5",
+        "completedAt": "2026-10-18 21:06:06.541272+08",
+        "createdAt": "2026-10-18 21:06:05.570077+08",
+        "execution": {
+          "baseCommit": "5e62608af333b5757bf767e05b19e2b0d56f0afb",
+          "branch": "codex/task-scaffold-36eed72d-7c64-40be-9525-0155ce284e38-052c6c858b48",
+          "commitSha": "1db7a8a3c801909ce9fc760298d6bb0c6fa8a6b5",
+          "executionId": "36eed72d-7c64-40be-9525-0155ce284e38",
+          "taskId": "SCAFFOLD"
+        },
+        "gateEvidence": {},
+        "observedTaskState": {
+          "adrVersion": 1,
+          "contextVersion": 1,
+          "contractVersion": 1,
+          "id": "SCAFFOLD",
+          "schemaVersion": 1,
+          "status": "CODE_REVIEW"
+        },
+        "operationKey": "af0b33d5-e867-46df-81d3-b873e16d1278",
+        "roles": [
+          "ENGINEERING_LEAD"
+        ],
+        "sequence": 5,
+        "status": "COMPLETED",
+        "taskExecutionId": "36eed72d-7c64-40be-9525-0155ce284e38",
+        "taskId": "SCAFFOLD",
+        "version": 2
+      },
+      {
+        "action": "operator:record_gate",
+        "actor": "lead",
+        "commitSha": "1db7a8a3c801909ce9fc760298d6bb0c6fa8a6b5",
+        "completedAt": "2026-10-18 21:06:08.234296+08",
+        "createdAt": "2026-10-18 21:06:06.794673+08",
+        "evidenceRef": "0640c28efe780785a8ed07dbe132794bac8230085731632090a7dd166ca7948d",
+        "execution": {
+          "baseCommit": "5e62608af333b5757bf767e05b19e2b0d56f0afb",
+          "branch": "codex/task-scaffold-36eed72d-7c64-40be-9525-0155ce284e38-052c6c858b48",
+          "commitSha": "1db7a8a3c801909ce9fc760298d6bb0c6fa8a6b5",
+          "executionId": "36eed72d-7c64-40be-9525-0155ce284e38",
+          "taskId": "SCAFFOLD"
+        },
+        "gate": "CODE_REVIEW",
+        "gateEvidence": {
+          "CODE_REVIEW": "0640c28efe780785a8ed07dbe132794bac8230085731632090a7dd166ca7948d"
+        },
+        "observedTaskState": {
+          "adrVersion": 1,
+          "contextVersion": 1,
+          "contractVersion": 1,
+          "id": "SCAFFOLD",
+          "schemaVersion": 1,
+          "status": "CODE_REVIEW"
+        },
+        "operationKey": "f5279221-4db5-481a-acb5-fe44ebc344e6",
+        "passed": true,
+        "roles": [
+          "ENGINEERING_LEAD"
+        ],
+        "sequence": 6,
+        "status": "COMPLETED",
+        "taskExecutionId": "36eed72d-7c64-40be-9525-0155ce284e38",
+        "taskId": "SCAFFOLD",
+        "version": 2
+      },
+      {
+        "action": "operator:start_testing",
+        "actor": "qa",
+        "commitSha": "1db7a8a3c801909ce9fc760298d6bb0c6fa8a6b5",
+        "completedAt": "2026-10-18 21:06:09.887457+08",
+        "createdAt": "2026-10-18 21:06:08.437124+08",
+        "execution": {
+          "baseCommit": "5e62608af333b5757bf767e05b19e2b0d56f0afb",
+          "branch": "codex/task-scaffold-36eed72d-7c64-40be-9525-0155ce284e38-052c6c858b48",
+          "commitSha": "1db7a8a3c801909ce9fc760298d6bb0c6fa8a6b5",
+          "executionId": "36eed72d-7c64-40be-9525-0155ce284e38",
+          "taskId": "SCAFFOLD"
+        },
+        "gateEvidence": {
+          "CODE_REVIEW": "0640c28efe780785a8ed07dbe132794bac8230085731632090a7dd166ca7948d"
+        },
+        "observedTaskState": {
+          "adrVersion": 1,
+          "contextVersion": 1,
+          "contractVersion": 1,
+          "id": "SCAFFOLD",
+          "schemaVersion": 1,
+          "status": "TESTING"
+        },
+        "operationKey": "282019b8-bf3b-4bfd-8890-3ac5b31aa89f",
+        "roles": [
+          "QA_LEAD"
+        ],
+        "sequence": 7,
+        "status": "COMPLETED",
+        "taskExecutionId": "36eed72d-7c64-40be-9525-0155ce284e38",
+        "taskId": "SCAFFOLD",
+        "version": 2
+      },
+      {
+        "action": "operator:record_gate",
+        "actor": "qa",
+        "commitSha": "1db7a8a3c801909ce9fc760298d6bb0c6fa8a6b5",
+        "completedAt": "2026-10-18 21:06:13.737716+08",
+        "createdAt": "2026-10-18 21:06:10.099754+08",
+        "evidenceRef": "b36750bce92cda6aa7ce7d6fc7ccb9e13cfb80ac8701322e99d5cd594ea45e8d",
+        "execution": {
+          "baseCommit": "5e62608af333b5757bf767e05b19e2b0d56f0afb",
+          "branch": "codex/task-scaffold-36eed72d-7c64-40be-9525-0155ce284e38-052c6c858b48",
+          "commitSha": "1db7a8a3c801909ce9fc760298d6bb0c6fa8a6b5",
+          "executionId": "36eed72d-7c64-40be-9525-0155ce284e38",
+          "taskId": "SCAFFOLD"
+        },
+        "gate": "UNIT_TEST",
+        "gateEvidence": {
+          "CODE_REVIEW": "0640c28efe780785a8ed07dbe132794bac8230085731632090a7dd166ca7948d",
+          "UNIT_TEST": "b36750bce92cda6aa7ce7d6fc7ccb9e13cfb80ac8701322e99d5cd594ea45e8d"
+        },
+        "observedTaskState": {
+          "adrVersion": 1,
+          "contextVersion": 1,
+          "contractVersion": 1,
+          "id": "SCAFFOLD",
+          "schemaVersion": 1,
+          "status": "TESTING"
+        },
+        "operationKey": "ebeb071b-fa9c-4b20-b701-071273c681a6",
+        "passed": true,
+        "roles": [
+          "QA_LEAD"
+        ],
+        "sequence": 8,
+        "status": "COMPLETED",
+        "taskExecutionId": "36eed72d-7c64-40be-9525-0155ce284e38",
+        "taskId": "SCAFFOLD",
+        "version": 2
+      },
+      {
+        "action": "operator:record_gate",
+        "actor": "qa",
+        "commitSha": "1db7a8a3c801909ce9fc760298d6bb0c6fa8a6b5",
+        "completedAt": "2026-10-18 21:06:17.539295+08",
+        "createdAt": "2026-10-18 21:06:13.955442+08",
+        "evidenceRef": "23c83f4f64c5092ce0394c430ad910e431ac74600524a9b47e2c1bb3ac1ea1c8",
+        "execution": {
+          "baseCommit": "5e62608af333b5757bf767e05b19e2b0d56f0afb",
+          "branch": "codex/task-scaffold-36eed72d-7c64-40be-9525-0155ce284e38-052c6c858b48",
+          "commitSha": "1db7a8a3c801909ce9fc760298d6bb0c6fa8a6b5",
+          "executionId": "36eed72d-7c64-40be-9525-0155ce284e38",
+          "taskId": "SCAFFOLD"
+        },
+        "gate": "INTEGRATION_TEST",
+        "gateEvidence": {
+          "CODE_REVIEW": "0640c28efe780785a8ed07dbe132794bac8230085731632090a7dd166ca7948d",
+          "INTEGRATION_TEST": "23c83f4f64c5092ce0394c430ad910e431ac74600524a9b47e2c1bb3ac1ea1c8",
+          "UNIT_TEST": "b36750bce92cda6aa7ce7d6fc7ccb9e13cfb80ac8701322e99d5cd594ea45e8d"
+        },
+        "observedTaskState": {
+          "adrVersion": 1,
+          "contextVersion": 1,
+          "contractVersion": 1,
+          "id": "SCAFFOLD",
+          "schemaVersion": 1,
+          "status": "TESTING"
+        },
+        "operationKey": "51656576-0d46-416f-99ea-a1423a296311",
+        "passed": true,
+        "roles": [
+          "QA_LEAD"
+        ],
+        "sequence": 9,
+        "status": "COMPLETED",
+        "taskExecutionId": "36eed72d-7c64-40be-9525-0155ce284e38",
+        "taskId": "SCAFFOLD",
+        "version": 2
+      },
+      {
+        "action": "operator:record_gate",
+        "actor": "business",
+        "commitSha": "1db7a8a3c801909ce9fc760298d6bb0c6fa8a6b5",
+        "completedAt": "2026-10-18 21:06:19.175913+08",
+        "createdAt": "2026-10-18 21:06:17.758876+08",
+        "evidenceRef": "877ae1d086c1424420adf2a11ffadb7efa8bbc620e93d294b2421d7d82910f5e",
+        "execution": {
+          "baseCommit": "5e62608af333b5757bf767e05b19e2b0d56f0afb",
+          "branch": "codex/task-scaffold-36eed72d-7c64-40be-9525-0155ce284e38-052c6c858b48",
+          "commitSha": "1db7a8a3c801909ce9fc760298d6bb0c6fa8a6b5",
+          "executionId": "36eed72d-7c64-40be-9525-0155ce284e38",
+          "taskId": "SCAFFOLD"
+        },
+        "gate": "BUSINESS_ACCEPTANCE",
+        "gateEvidence": {
+          "BUSINESS_ACCEPTANCE": "877ae1d086c1424420adf2a11ffadb7efa8bbc620e93d294b2421d7d82910f5e",
+          "CODE_REVIEW": "0640c28efe780785a8ed07dbe132794bac8230085731632090a7dd166ca7948d",
+          "INTEGRATION_TEST": "23c83f4f64c5092ce0394c430ad910e431ac74600524a9b47e2c1bb3ac1ea1c8",
+          "UNIT_TEST": "b36750bce92cda6aa7ce7d6fc7ccb9e13cfb80ac8701322e99d5cd594ea45e8d"
+        },
+        "observedTaskState": {
+          "adrVersion": 1,
+          "contextVersion": 1,
+          "contractVersion": 1,
+          "id": "SCAFFOLD",
+          "schemaVersion": 1,
+          "status": "TESTING"
+        },
+        "operationKey": "047c5dbf-153b-4dbb-87bc-362fe1a7b6b3",
+        "passed": true,
+        "roles": [
+          "BUSINESS_APPROVER"
+        ],
+        "sequence": 10,
+        "status": "COMPLETED",
+        "taskExecutionId": "36eed72d-7c64-40be-9525-0155ce284e38",
+        "taskId": "SCAFFOLD",
+        "version": 2
+      },
+      {
+        "action": "operator:accept_task",
+        "actor": "business",
+        "commitSha": "1db7a8a3c801909ce9fc760298d6bb0c6fa8a6b5",
+        "completedAt": "2026-10-18 21:06:22.988651+08",
+        "createdAt": "2026-10-18 21:06:19.384874+08",
+        "execution": {
+          "baseCommit": "5e62608af333b5757bf767e05b19e2b0d56f0afb",
+          "branch": "codex/task-scaffold-36eed72d-7c64-40be-9525-0155ce284e38-052c6c858b48",
+          "commitSha": "1db7a8a3c801909ce9fc760298d6bb0c6fa8a6b5",
+          "executionId": "36eed72d-7c64-40be-9525-0155ce284e38",
+          "taskId": "SCAFFOLD"
+        },
+        "gateEvidence": {
+          "BUSINESS_ACCEPTANCE": "877ae1d086c1424420adf2a11ffadb7efa8bbc620e93d294b2421d7d82910f5e",
+          "CODE_REVIEW": "0640c28efe780785a8ed07dbe132794bac8230085731632090a7dd166ca7948d",
+          "INTEGRATION_TEST": "23c83f4f64c5092ce0394c430ad910e431ac74600524a9b47e2c1bb3ac1ea1c8",
+          "UNIT_TEST": "b36750bce92cda6aa7ce7d6fc7ccb9e13cfb80ac8701322e99d5cd594ea45e8d"
+        },
+        "observedTaskState": {
+          "adrVersion": 1,
+          "contextVersion": 1,
+          "contractVersion": 1,
+          "id": "SCAFFOLD",
+          "schemaVersion": 1,
+          "status": "ACCEPTED"
+        },
+        "operationKey": "e8ef7cfc-760f-4687-9a43-de063bcf6359",
+        "roles": [
+          "BUSINESS_APPROVER"
+        ],
+        "sequence": 11,
+        "status": "COMPLETED",
+        "taskExecutionId": "36eed72d-7c64-40be-9525-0155ce284e38",
+        "taskId": "SCAFFOLD",
+        "version": 2
+      }
+    ],
+    "plan": {
+      "architectureDecisions": [
+        {
+          "evidence": [
+            {
+              "blobId": "3d20798fdcac3e2815f7eb101d5863b1ca3d13a5",
+              "path": "Blog/pom.xml"
+            }
+          ],
+          "id": "ADR-ISOLATION",
+          "statement": "Independent sample process and business database; platform stores governance only",
+          "taskIds": [
+            "SCAFFOLD"
+          ]
+        }
+      ],
+      "baseCommit": "5e62608af333b5757bf767e05b19e2b0d56f0afb",
+      "planLevelBehavior": {
+        "article": "Pinned seven posts: raw content, routes, blog/menu ownership and UTC mapping; approved editing and soft deletion"
+      },
+      "planLevelBehaviorTaskMapping": "UNMAPPED",
+      "requirementMapping": "DECLARED_TASK_LINKS",
+      "requirements": [
+        {
+          "id": "MVP-08",
+          "statement": "Approved independent article slice with seven-post MySQL migration and preserved behavior",
+          "taskIds": [
+            "SCAFFOLD"
+          ]
+        }
+      ],
+      "revisionLineage": [
+        {
+          "ACTIVATED_AT": "2026-10-18T21:04:34.568273+08:00",
+          "ARCHITECT": "architect",
+          "ARCHITECT_AT": "2026-10-18T21:04:37.14301+08:00",
+          "CREATED_AT": "2026-10-18T21:04:34.568273+08:00",
+          "FINGERPRINT": "0d343456277b00079690c81ca19abc5fe87119854e17c336878f1018fee43c30",
+          "MANAGER": "manager",
+          "MANAGER_AT": "2026-10-18T21:04:37.34451+08:00",
+          "PARENT_FINGERPRINT": null
+        }
+      ],
+      "scope": "0d343456277b00079690c81ca19abc5fe87119854e17c336878f1018fee43c30",
+      "status": "APPROVED",
+      "targetCommit": "5e62608af333b5757bf767e05b19e2b0d56f0afb",
+      "targetRef": "refs/heads/main"
+    },
+    "projectId": "legacy-blog",
+    "reconciliationRequired": false,
+    "selectedCandidate": {
+      "eligibility": "ELIGIBLE_AT_OBSERVATION",
+      "id": "5da8f5ef-2979-4eb8-85a7-15cc7e0ba24c"
+    },
+    "tasks": [
+      {
+        "adrVersion": 1,
+        "baseCommit": "5e62608af333b5757bf767e05b19e2b0d56f0afb",
+        "contextVersion": 1,
+        "contractVersion": 1,
+        "dependencies": [],
+        "gateEvidence": {
+          "BUSINESS_ACCEPTANCE": "877ae1d086c1424420adf2a11ffadb7efa8bbc620e93d294b2421d7d82910f5e",
+          "CODE_REVIEW": "0640c28efe780785a8ed07dbe132794bac8230085731632090a7dd166ca7948d",
+          "INTEGRATION_TEST": "23c83f4f64c5092ce0394c430ad910e431ac74600524a9b47e2c1bb3ac1ea1c8",
+          "UNIT_TEST": "b36750bce92cda6aa7ce7d6fc7ccb9e13cfb80ac8701322e99d5cd594ea45e8d"
+        },
+        "gateResults": {
+          "BUSINESS_ACCEPTANCE": true,
+          "CODE_REVIEW": true,
+          "INTEGRATION_TEST": true,
+          "UNIT_TEST": true
+        },
+        "id": "SCAFFOLD",
+        "owner": "developer",
+        "schemaVersion": 1,
+        "semanticallyInvalidated": false,
+        "status": "ACCEPTED"
+      }
+    ]
+  },
+  "integrity": {
+    "algorithm": "SHA-256",
+    "canonicalization": "SORTED_OBJECT_KEYS_UTF8_COMPACT_JSON",
+    "payloadSha256": "101e7e677634d7d1b90c46ab5726a95e9dd13fbfe804b646f4e42bdabd1dbcd4",
+    "signature": false
+  }
+}

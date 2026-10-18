@@ -5,7 +5,7 @@
 - 后端：Java 21，`backend/pom.xml`，默认 `127.0.0.1:8081`。
 - 前端：Node 22，`frontend/package-lock.json`，开发端口 `127.0.0.1:5174`，代理到样例 8081。
 - 业务库：以样例后端为工作目录运行时使用 `backend/data/articles`。不能指向平台治理库。
-- 用户已选择保留 MySQL。10A 存储基线及 10B1 博客归属隔离、HTML 清洗、稳定精确 URL、版本编辑和软删除已验证，见平台 `docs/acceptance/milestone10b1-article-behavior.md`。H2 仍是开发夹具，独立旧库迁移和受管验收尚未完成。
+- 用户已选择保留 MySQL。10A/10B1/10B2/10C 均已完成：归属隔离、HTML 清洗、精确稳定 URL、版本编辑/软删除、独立旧库迁移及实际受管候选验收，见平台 `docs/acceptance/milestone10-article.md`。H2 仍是开发夹具，完整 MVP 发布复验属于第 11 里程碑。
 
 在平台根目录，已有项目离线依赖时运行：
 
@@ -57,3 +57,5 @@ MySQL 8.0 目标采用 `schema-mysql.sql`，显式使用 `mysql` profile 和项�
 页面在 `127.0.0.1:5174` 提供登录/管理/公开阅读。编辑正文保留原 HTML，只有服务端清洗结果可进入阅读区。未知写入需要刷新核对，不自动重发；软删除隐藏文章并保留记录。本地回环运行是当前边界；本批未做公网部署或浏览器端到端验收。
 
 受管仓库流程见平台 `docs/project-plans.md`。初始化只从固定的本地旧仓库读取对象，保留其 MIT LICENSE；脚手架由任务执行者放入 `modern/article-app`，经平台组合验证、人工验收，再形成后续计划基线。
+
+独立迁移入口：`java -jar <样例后端jar> --migration preview <配置.json>`，再以返回指纹执行 `--migration apply <配置.json> <fingerprint>`。不启动 Web 服务。必须显式指定独立 MySQL 源/目标、已有新账号文件、时区、目标状态和旧博客归属；不读取旧密码。映射和成功审计与文章同事务，目标编辑或软删除后不会被重试覆盖。完整配置与回滚/重试边界见平台 `docs/article-migration.md`。本 README 的接口表是独立样例契约；平台 `docs/contracts/articles.openapi.yaml` 只描述历史 demo。

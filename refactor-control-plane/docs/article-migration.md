@@ -1,69 +1,60 @@
-# 旧 posts 数据迁移与对照验收
+# 独立文章迁移与第十里程碑验收
 
-本期实现单项目 H2 参考迁移：读取控制平面数据库中的旧 `posts` 快照，显式预检后复制到 `modern_articles`。不会自动连接 MySQL、运行旧仓库 SQL、导入线上数据、改写或删除旧表。它证明文章数据与 CRUD 的迁移能力，不代表整个旧博客的用户、菜单、评论、路由或富文本展示已完成迁移。
+10B2 的业务迁移工具位于 `samples/article-app`，以本地命令运行；源 MySQL 和目标 MySQL 使用独立 schema、独立连接。控制平台只保存任务、候选、验证、门禁与审计，不读取或迁移业务数据。历史平台内 H2 demo 的 `LegacyPostMigrationService` 和 `/api/v1/article-migration` 仅保留兼容，不是当前交付路径。
 
-## 数据归属与验收含义（2026-10-07 校对）
+## 原始数据与策略
 
-这里的“旧 MySQL 数据”是**被管控、被升级的 SpringMvcBlog 业务数据**，不是控制平台自己的历史任务、租约或审计数据。当前控制平台默认使用 H2；其 `audit_event` 和集成记录用于治理。旧 `posts`、新 `modern_articles` 与迁移映射属于文章样例，当前为演示共用一个 H2 数据源，逻辑上应与平台治理数据分开。
+固定来源为 SpringMvcBlog `5e62608af333b5757bf767e05b19e2b0d56f0afb` 的 SQL 对象。测试只提取 `blogs, menus, blogsmenus, posts` 的建表和 INSERT，不执行整个 dump、不导入用户密码。七篇文章引用：
 
-现有对照测试使用固定仓库 SQL 导出的文章行，并未连接任何客户线上数据库。“真实 MySQL 验收”是尚待补充的**隔离样例在数据库引擎上的兼容证明**，不意味着平台开发必须等待用户提供生产备份。具体客户的脱敏数据、备份恢复、停写/切换验证应在接入该项目时另行确定。
+| 旧 BlogMenuId | 旧博客 Id | 旧菜单 Id | 篇数 |
+|---|---|---|---:|
+| 15 | 3 | 1 | 5 |
+| 25 | 8 | 1 | 1 |
+| 48 | 3 | 3 | 1 |
 
-平台职责是治理迁移任务、资源、授权、验证和证据；业务迁移脚本由被管控项目提供。其他项目不使用 MySQL 或不更换数据库时，不需要套用此 posts 迁移。样例物理隔离及目标库策略的可选方案见[开发计划](development-plan.md)，尚未实施拆分。
+不引用的旧博客、菜单和评论产品不随文章切片重写。博客到新本地账号的映射必须显式给出并覆盖所有文章来源博客，账号必须存在于显式账号文件；不从旧用户 ID 推导新身份。测试中的 `Europe/Istanbul`、PUBLISHED 和两个测试账号都是显式夹具策略，不证明历史生产库采用该时区或状态。
 
-## 来源与映射
+## 本地命令
 
-固定样例：`5e62608af333b5757bf767e05b19e2b0d56f0afb` 的 `Blog/src/main/resources/db/blogdb.sql`。`LegacyPostMigrationContractTest` 从该 Git 对象读取 **posts INSERT**，仅在隔离测试库重放；将该固定导出使用的 MySQL `\r\n` 转义还原为实际换行，不执行其他旧库语句。
+先在新业务目标库显式应用样例 `backend/src/main/resources/schema-mysql.sql`。源账号仅授予 SELECT；目标运行账号只需读写业务表，DDL 由操作者预先执行。不得指向治理库，不复用现有服务/datadir，不自动分配无归属旧目标数据。
 
-| 旧字段 | 目标 | 处理 |
-|---|---|---|
-| Id | legacy_post_import.legacy_id → article_id | 新文章使用数据库生成 ID，避免覆盖已有文章；旧 ID 单独唯一映射 |
-| PostTitle | title + source_title | 原样保留，标题上限扩展为 255；空白或超限整批拒绝，不截断 |
-| PostContent | content + source_content | 原样保留 HTML、Unicode 和换行，不将 HTML 当作可直接执行的页面内容 |
-| RequestMapping | request_mapping | 保留来源路由；本期不启用旧 URL 跳转 |
-| BlogMenuId | blog_menu_id | 保留原关联 ID；本期不迁移菜单或据此授予权限 |
-| DateTime | source_datetime + source_zone → updated_at | 原始时间保留到纳秒；必须显式指定时区，再转换成 Instant |
-| 无对应字段 | status | 必须显式指定 DRAFT / PUBLISHED / ARCHIVED，不推断发布状态 |
+在项目忽略的 `.runtime` 保存 UTF-8 JSON 配置，密码和账号文件不得提交：
 
-`updated_at` 延续已有 H2 无时区列及 JDBC 读写方式；服务部署应保持 JVM 默认时区一致。本期保存了原始时间与显式来源时区，但没有迁移既有文章时间列的历史时区语义。真实 MySQL 迁移前仍需确认备份编码、来源时区和状态策略。
-
-## 本地准备
-
-1. 先备份本项目 H2 数据库，停止向待迁移快照写入。通过已有可信导出/导入流程，将需要迁移的单个旧库 `posts` 放入同一个本地参考数据库。不要直接在控制平面库执行整个旧仓库 SQL dump。
-2. `posts` 必须具有 `Id, PostTitle, PostContent, RequestMapping, BlogMenuId, DateTime` 列。时间列为无时区本地时间；标题/正文/路由编码必须已确认。来源身份固定为本项目的单个 SpringMvcBlog 快照，不能把另一个旧库复用到已有映射上。
-3. 启动应用会幂等执行 V1/V2 的目标扩展 DDL；不会启动数据复制。配置项目本地经理账号，详见 [治理操作](governance-operations.md)。
-
-## 预检与执行
-
-两个端点均要求当前项目的 `PROJECT_MANAGER`，通过 `Authorization: Bearer ...` 传入项目本地凭据。没有默认凭据。下列时区与 DRAFT 仅为示例，必须按实际备份选择。
-
-```http
-POST /api/v1/article-migration/preview
-Content-Type: application/json
-Authorization: Bearer <project-manager-token>
-
-{"sourceZone":"Europe/Istanbul","targetStatus":"DRAFT"}
+```json
+{
+  "source": {"url":"jdbc:mysql://127.0.0.1:3306/legacy_snapshot?connectionTimeZone=UTC&connectTimeout=5000&socketTimeout=30000","username":"source_reader","password":"<source password>"},
+  "target": {"url":"jdbc:mysql://127.0.0.1:3306/new_article_target?connectionTimeZone=UTC&connectTimeout=5000&socketTimeout=30000","username":"article_writer","password":"<target password>"},
+  "accountsFile":"accounts.json",
+  "sourceZone":"Europe/Istanbul",
+  "targetStatus":"DRAFT",
+  "owners":{"3":"author-one","8":"author-two"},
+  "operator":"migration-operator"
+}
 ```
 
-预检返回 `fingerprint, sourceCount, pending, alreadyImported, imported, issues`，不写文章、映射或迁移审计。`issues` 非空时不可执行。DST 重叠/缺失时间会报错，需人工核实后选择明确的固定偏移；不会自动选择较早或较晚的时间。
+账号格式与散列要求见[样例说明](../samples/article-app/README.md)。相对账号路径以配置文件所在目录解析。连接 TLS 策略由项目配置明确提供；工具不自动降级 TLS。
 
-```http
-POST /api/v1/article-migration/apply
-Content-Type: application/json
-Authorization: Bearer <project-manager-token>
-
-{"sourceZone":"Europe/Istanbul","targetStatus":"DRAFT","expectedFingerprint":"<preview 返回的 64 位 SHA-256>"}
+```powershell
+java -jar <样例后端jar绝对路径> --migration preview <配置绝对路径>
+java -jar <样例后端jar绝对路径> --migration apply <配置绝对路径> <预检返回的64位fingerprint>
 ```
 
-指纹绑定有序来源行和完整迁移策略。执行时重新读取并比对；来源/策略变化、非法数据、旧映射冲突、目标已编辑或已删除、已导入来源消失均拒绝整批执行。重试保留目标编辑和删除，不自动恢复或覆盖。迁移成功后不再让原来源表与新文章双向同步。
+此分支不启动 Spring Web，不新增 HTTP 迁移端点。命令输出只含指纹、数量和问题代码，不输出凭据或原文；出错时结果未确认，先重新预检并核对目标映射/成功审计，不自动重发。operator 是持有数据库凭据的本地操作者声明，不冒充平台认证或实际人工签署。
 
-文章、映射和成功审计在同一数据库事务提交。数据库行锁协调并发执行；同一批重试 `imported=0`，不产生第二条成功审计。失败整批回滚；失败请求不承诺生成成功审计。请求超时后先重新预检/核对映射与 `article_migration_run`，不能仅凭超时判断未执行。
+## 保留与拒绝行为
 
-`alreadyImported` 只计算执行前已迁移且校验一致的来源行，`imported` 只计算本次新增；`pending` 在成功执行响应中为 0。来源消失的冲突也会进入 issues，因此不能用 issues 数量推算来源行数。
+- 旧 ID → 数据库生成的新文章 ID 保存在 `legacy_post_import`，不覆盖已有文章。`source_json` 保留标题、原 HTML、slug、旧 BlogMenuId/博客/用户/菜单 ID、博客 URL、菜单名及原始本地时间；`policy_json` 保留显式策略。目标文章 → 菜单 → 博客保存新关联，旧新关联可完整对照。
+- 原文不清洗写回；公开接口仍按 10B1 白名单显示。源时间先拒绝 DST 重叠/缺失，再按显式时区转换成 UTC 微秒；原纳秒值留在映射中。标题、关联或路由非法/歧义时整批拒绝，不 trim、截断或猜测修复。
+- 三段路由保留原值，使用 NO PAD 唯一键；已有路由（包括已软删除的占用）不得被新导入覆盖。博客原有归属冲突拒绝。
+- 预检不写目标。指纹绑定源服务器/实际 schema、目标、完整策略和有序源快照；MySQL 身份取服务器 `DATABASE()` 与大小写规则，不依赖可被 JDBC 元数据选项改变的 catalog。
+- 执行取得目标数据库行锁，再重新读取一致的只读源快照。文章、博客/菜单、原文与 ID 映射、源身份绑定和成功审计在**同一目标事务**提交。源只读，不宣称跨库分布式事务；需要冻结的客户源快照由操作者提供。
+- 并发/重复执行只导入一次、只新增一次成功审计。来源变化/消失、策略变化、目标编辑或删除均拒绝后续覆盖；墓碑和映射保留，不恢复已删除文章，不提供破坏性回滚接口。
+- 单批 10,000 个连接后行、16 MiB 编码文本预算，单正文 1 MiB。先聚合连接后的行数/字符长度，避免关联重复放大 LOB；事务/语句有时间边界。超过规模需要具体迁移计划，不静默拆分。
 
-## 边界和验收
+## 真实引擎与平台绑定
 
-- 单批最多 10,000 行、16 MiB UTF-8 文本；SQL 先统计行数/字符长度，再读取 LOB 并计算 UTF-8 大小；事务超时 30 秒。
-- 保留映射墓碑，故意不设置会级联删除来源记录的文章外键。
-- 不提供破坏性回滚端点。需要撤销时，先对照目标指纹及审计，审批具体受影响行；不得批量删除已被用户编辑的数据。
-- 验收覆盖固定样例数据、已有目标 ID、255 字符标题、重复/并发请求、来源变更、目标编辑/删除、原子回滚、时区歧义、纳秒精度和权限。
-- OpenAPI [1.1.0 契约](contracts/articles.openapi.yaml) 包含 CRUD 和迁移请求/响应。尚未验收所选真实数据库方案的兼容性及文章相关旧业务行为；MVP-08 仍不能标记全部完成。生产备份恢复、完整博客迁移或跨库分布式事务不是所有平台 MVP 都必须实现的能力，是否需要取决于具体项目和已批准迁移方案。
+`scripts/mysql_sample.py` 可在**新的项目目录**创建已有 MySQL 二进制的独立进程，使用源只读账号、新目标及独立故障目标；测试后核对 datadir/端口并正常关闭。可用 `--app` 指向项目内实际候选中的样例，不能用根目录样例报告替代候选报告。
+
+`scripts/verify_milestone10.py governed` 复现新治理库、固定旧 Git 基线、任务工作树、提交、候选、本机 MySQL/Vue 验证、独立测试角色门禁、人工建议和审计导出。测试身份只验证角色隔离和门禁机制，不代表生产人工签署；样例 main 保持固定旧提交，不自动合并。
+
+最终逐项结论和精确候选身份见[第十里程碑验收](acceptance/milestone10-article.md)。客户生产备份、停写切换、容量认证和完整博客产品不属于本次隔离样例证明。
