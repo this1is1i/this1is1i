@@ -43,6 +43,13 @@ public class IntegrationController {
         fields(body, Set.of("idempotencyKey", "expectedFingerprint", "validationId")); text(body, "idempotencyKey", "expectedFingerprint", "validationId");
         return service.propose(actor, id, mapper.convertValue(body, IntegrationService.Propose.class));
     }
+    @PostMapping("/{id}/reconcile-validation") public Object reconcile(@RequestHeader(value="Authorization",required=false) String auth,
+            @PathVariable String id,@RequestBody JsonNode body) {
+        var actor=identities.authenticate(auth);
+        fields(body,Set.of("idempotencyKey","expectedFingerprint","validationId","reason"));
+        text(body,"idempotencyKey","expectedFingerprint","validationId","reason");
+        return service.reconcileValidation(actor,id,mapper.convertValue(body,IntegrationService.Reconcile.class));
+    }
     private void fields(JsonNode body, Set<String> fields) {
         if (!body.isObject()) throw new IllegalArgumentException("Expected an object");
         body.fieldNames().forEachRemaining(field -> { if (!fields.contains(field)) throw new IllegalArgumentException("Unknown field: " + field); });

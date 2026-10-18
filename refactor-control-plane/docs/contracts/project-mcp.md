@@ -4,6 +4,8 @@
 
 权威定义为 `backend/src/main/java/io/refactorcontrolplane/mcp/McpToolSchemas.java`，`tools/list` 直接使用同一注册表，避免静态文档与运行时副本漂移。输出 Schema 在真实 HTTP 读操作及 Git/租约写入回归中校验；不会在写操作已提交后再以 Schema 失败伪装为未执行。
 
+第 8A 的任务响应增加 `capacityHeld` 和 `capacityBlockers`（kind、resourceId、capacity、used）；`get_ready_tasks` 过滤容量不足的任务，领取在创建工作树前复核。停止确认是独立项目经理的治理命令，不新增或开放任务凭据 MCP 工具，见[执行容量与停止对账](../execution-scheduling.md)。
+
 ## 通用输入
 
 所有参数对象拒绝未知字段。无参数读工具允许省略 arguments，其余必须提供 object。写工具均要求非空字符串 `taskId, taskToken, idempotencyKey` 及正整型 `expectedVersion`；幂等键最长 200 个 Unicode 码点。任务、令牌、版本、路径与角色的业务授权继续由治理层校验。

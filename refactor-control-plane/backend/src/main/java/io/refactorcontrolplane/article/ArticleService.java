@@ -9,6 +9,7 @@ import org.springframework.jdbc.support.GeneratedKeyHolder;
 import org.springframework.stereotype.Service;
 
 @Service
+@org.springframework.boot.autoconfigure.condition.ConditionalOnProperty(name="control-plane.project.mode",havingValue="demo",matchIfMissing=true)
 public class ArticleService {
 
     private final JdbcTemplate jdbc;

@@ -13,6 +13,11 @@ import org.springframework.test.web.servlet.MockMvc;
         "spring.datasource.url=jdbc:h2:mem:integration-api"})
 @AutoConfigureMockMvc
 class IntegrationApiContractTest {
+    @org.junit.jupiter.api.Test void unknownValidationReconciliationRequiresIdentity() throws Exception {
+        mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post("/api/v1/integrations/candidates/missing/reconcile-validation")
+                .contentType("application/json").content("{}"))
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.status().isForbidden());
+    }
     @Autowired MockMvc mvc;
 
     @Test void candidatesRequireProjectAuthentication() throws Exception {

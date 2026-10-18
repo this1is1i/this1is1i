@@ -20,6 +20,128 @@ const view = (id = "one", valid = true) => ({
 const json = (value: unknown, status = 200) => new Response(JSON.stringify(value), { status, headers: { "Content-Type": "application/json" } });
 const deferred = <T>() => { let resolve!: (value: T) => void; const promise = new Promise<T>(r => resolve = r); return { promise, resolve }; };
 
+it("binds configured gates to personal statements or the selected current platform validation", async () => {
+  const create = await factory(), posts: any[] = [];
+  const actor: any = snapshot("lead", ["ENGINEERING_LEAD"]);
+  actor.evidenceRequired = true; actor.tasks[0].status = "CODE_REVIEW"; actor.tasks[0].execution.executionId = "execution-a";
+  const candidate = view();
+  const model = create(async (url: string, init?: RequestInit) => {
+    if (init?.method === "POST") { posts.push(JSON.parse(init.body as string)); return json({ recorded: true }); }
+    return json(url.endsWith("workbench") ? actor : url.endsWith("candidates") ? ["one"] : candidate);
+  }, () => "gate-key");
+  await model.login("lead-secret");
+  await model.taskCommand("A", "record_gate", "CODE_REVIEW", true, " Reviewed diff ");
+  expect(posts[0]).toMatchObject({ statement: "Reviewed diff", gate: "CODE_REVIEW", passed: true, taskExecutionId: "execution-a" });
+  expect(posts[0]).not.toHaveProperty("evidenceRef");
+  actor.subjectId = "qa"; actor.roles = ["QA_LEAD"]; actor.tasks[0].status = "TESTING"; actor.tasks[1].status = "TESTING";
+  await model.login("qa-secret");
+  await model.taskCommand("A", "record_gate", "UNIT_TEST", true, "external report");
+  expect(posts).toHaveLength(1);
+  await model.select("one");
+  await model.taskCommand("B", "record_gate", "UNIT_TEST", true);
+  expect(posts).toHaveLength(1);
+  await model.taskCommand("A", "record_gate", "UNIT_TEST", true);
+  expect(posts[1]).toMatchObject({ candidateId: "one", validationId: "validation", gate: "UNIT_TEST" });
+  expect(posts[1]).not.toHaveProperty("statement");
+  candidate.candidate.latestValidation = "newer"; await model.refresh();
+  await model.taskCommand("A", "record_gate", "UNIT_TEST", true); expect(posts).toHaveLength(2);
+  candidate.candidate.latestValidation = "validation"; actor.tasks[0].status = "ACCEPTED"; actor.tasks[0].gates.UNIT_TEST = true;
+  await model.refresh();
+  await model.taskCommand("A", "record_gate", "UNIT_TEST", false); expect(posts).toHaveLength(2);
+  await model.taskCommand("A", "record_gate", "UNIT_TEST", true); expect(posts).toHaveLength(3);
+});
+
+it("dispatches a configured executor only for the current owner's claimed execution and preserves unknown requests", async () => {
+  const create = await factory(); const requests: any[] = [];
+  const actor: any = snapshot("dev", ["DEVELOPER"]);
+  actor.executors = [{ id: "internal", kind: "HTTP" }];
+  actor.tasks = [{ id: "A", owner: "dev", status: "CLAIMED", currentlyValid: true, capacityHeld: true,
+    execution: { executionId: "execution-a", commitSha: null }, gates: {}, dependencies: [] }];
+  const model = create(async (url: string, init?: RequestInit) => {
+    if (init?.method === "POST") { requests.push({url, body: JSON.parse(init.body as string)}); return json({ error: "uncertain" }, 409); }
+    return json(url.endsWith("workbench") ? actor : []);
+  }, () => "executor-key");
+  await model.login("secret");
+  expect(model.dispatchExecutor).toBeTypeOf("function");
+  expect(model.canDispatch(model.state.snapshot.tasks[0])).toBe(true);
+  await model.dispatchExecutor("A", "unconfigured"); expect(requests).toHaveLength(0);
+  await model.dispatchExecutor("A", "internal");
+  expect(requests[0]).toEqual({url:"/api/v1/executions/execution-a/dispatch",body:{taskId:"A",executorId:"internal",expectedVersion:3,idempotencyKey:"executor-key"}});
+  await model.dispatchExecutor("A", "internal"); expect(requests).toHaveLength(1);
+  await model.retry(); expect(requests[1]).toEqual(requests[0]);
+});
+
+it("requires independent stop evidence tied to the current execution before allowing another attempt", async () => {
+  const create = await factory(); const posts: any[] = [];
+  const actor: any = snapshot("manager", ["PROJECT_MANAGER"]);
+  actor.tasks = [{ id: "A", owner: "dev", status: "BLOCKED", currentlyValid: true, capacityHeld: true,
+    execution: { executionId: "attempt-1", commitSha: null }, gates: {}, dependencies: [] }];
+  const model = create(async (url: string, init?: RequestInit) => {
+    if (init?.method === "POST") { posts.push(JSON.parse(init.body as string)); return json({ task: actor.tasks[0] }); }
+    return json(url.endsWith("workbench") ? actor : []);
+  }, () => "stop-key");
+  await model.login("secret");
+  const task = model.state.snapshot.tasks[0];
+  expect(model.canTask(task, "retry_task")).toBe(false);
+  expect(model.canTask(task, "confirm_execution_stopped")).toBe(true);
+  await model.taskCommand("A", "confirm_execution_stopped"); expect(posts).toHaveLength(0);
+  await model.taskCommand("A", "confirm_execution_stopped", undefined, undefined, " process-log:exited ");
+  expect(posts).toEqual([{ action: "confirm_execution_stopped", taskId: "A", expectedVersion: 3,
+    idempotencyKey: "stop-key", taskExecutionId: "attempt-1", evidenceRef: "process-log:exited" }]);
+  actor.tasks[0].currentlyValid = false; actor.tasks[0].status = "STALE"; await model.refresh();
+  expect(model.canTask(model.state.snapshot.tasks[0], "confirm_execution_stopped")).toBe(true);
+  actor.tasks[0].currentlyValid = true; actor.tasks[0].status = "RUNNING"; await model.refresh();
+  expect(model.canTask(model.state.snapshot.tasks[0], "confirm_execution_stopped")).toBe(true);
+  actor.subjectId = "dev"; await model.refresh();
+  expect(model.canTask(model.state.snapshot.tasks[0], "confirm_execution_stopped")).toBe(false);
+});
+
+it("lets independent QA reconcile a stale unknown validation with exact evidence",async()=>{
+  const create=await factory();const posts:any[]=[];const candidate=view("one",false);candidate.validation.state="RUNNING";
+  const model=create(async(url:string,init?:RequestInit)=>{if(init?.method==="POST"){posts.push(JSON.parse(init.body as string));return json({...candidate.validation,state:"ABANDONED"});}
+    return json(url.endsWith("workbench")?snapshot("qa",["QA_LEAD"]):url.endsWith("candidates")?["one"]:candidate);},()=>"reconcile-key");
+  await model.login("qa-secret");await model.select("one");expect(model.canReconcile).toBeTypeOf("function");expect(model.canReconcile()).toBe(true);
+  await model.reconcile("Process stopped; inspected validation worktree");
+  expect(posts[0]).toEqual({idempotencyKey:"reconcile-key",expectedFingerprint:"fp-one",validationId:"validation",reason:"Process stopped; inspected validation worktree"});
+});
+
+it("assigns only to project members and claims only ready work owned by the current identity", async () => {
+  const create = await factory(); const posts: any[] = [];
+  const actor: any = snapshot("manager", ["PROJECT_MANAGER"]);
+  actor.assignees = [{ subjectId: "dev", roles: ["DEVELOPER"] }];
+  actor.tasks = [{ id: "A", owner: "task:A", status: "READY", currentlyValid: true, claimable: true, gates: {}, dependencies: [] }];
+  const model = create(async (url: string, init?: RequestInit) => {
+    if (init?.method === "POST") { posts.push({ url, body: JSON.parse(init.body as string) }); return json({ assigned: true }); }
+    return json(url.endsWith("workbench") ? actor : []);
+  }, () => "dispatch-key");
+  await model.login("manager-secret");
+  expect(model.canAssign).toBeTypeOf("function"); expect(model.canAssign(model.state.snapshot.tasks[0])).toBe(true);
+  await model.assign("A", "outsider"); expect(posts).toHaveLength(0);
+  await model.assign("A", "dev");
+  expect(posts[0]).toEqual({ url: "/api/v1/workbench/assign", body: { taskId: "A", assignee: "dev", expectedVersion: 3, idempotencyKey: "dispatch-key" } });
+  actor.subjectId = "dev"; actor.roles = ["DEVELOPER"]; actor.tasks[0].owner = "dev";
+  await model.login("developer-secret"); expect(model.canClaim(model.state.snapshot.tasks[0])).toBe(true);
+  await model.claim("A"); expect(posts[1].url).toBe("/api/v1/workbench/claim");
+  expect(posts[1].body).toEqual({ taskId: "A", expectedVersion: 3, idempotencyKey: "dispatch-key" });
+  expect(JSON.stringify(model.state)).not.toContain("secret");
+  actor.tasks[0].claimable = false; await model.refresh(); await model.claim("A"); expect(posts).toHaveLength(2);
+  actor.tasks[0].claimable = true; actor.tasks[0].owner = "other"; await model.refresh(); await model.claim("A"); expect(posts).toHaveLength(2);
+});
+
+it("claim uncertainty preserves the original key and delayed results cannot revive a logged-out session", async () => {
+  const create = await factory(), pending = deferred<Response>(); const bodies: string[] = [];
+  const actor: any = snapshot("dev", ["DEVELOPER"]);
+  actor.tasks = [{ id: "A", owner: "dev", status: "READY", currentlyValid: true, claimable: true, dependencies: [] }];
+  const model = create(async (url: string, init?: RequestInit) => {
+    if (init?.method === "POST") { bodies.push(init.body as string); return bodies.length === 1 ? json({ error: "pending plan" }, 409) : pending.promise; }
+    return json(url.endsWith("workbench") ? actor : []);
+  }, () => "claim-once");
+  await model.login("token"); expect(model.claim).toBeTypeOf("function"); await model.claim("A");
+  expect(model.state.pending).not.toBeNull(); await model.claim("A"); expect(bodies).toHaveLength(1);
+  const retry = model.retry(); model.logout(); pending.resolve(json({ task: { execution: { path: "private-path" } } })); await retry;
+  expect(bodies[1]).toBe(bodies[0]); expect(model.state.snapshot).toBeNull(); expect(JSON.stringify(model.state)).not.toContain("private-path");
+});
+
 it("ignores a late authenticated response after logout", async () => {
   const create = await factory(); const pending = deferred<Response>();
   const model = create(async (url: string) => url.endsWith("workbench") ? pending.promise : json([]));

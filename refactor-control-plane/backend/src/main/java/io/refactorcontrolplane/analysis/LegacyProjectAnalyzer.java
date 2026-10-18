@@ -19,6 +19,7 @@ public final class LegacyProjectAnalyzer {
                 for (var detector : detectors) detector.inspect(entry, result);
             }
         }
+        new RelationshipDetector().inspect(snapshot, result);
         if (result.stack.isEmpty()) result.finding("UNKNOWN", "technology", "No supported technology declaration detected", null);
         result.finding("UNKNOWN", "architecture", "Runtime versions, call relationships and deployment topology require additional evidence", null);
         return result.report();

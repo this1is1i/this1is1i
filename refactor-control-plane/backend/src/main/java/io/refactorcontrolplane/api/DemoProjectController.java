@@ -8,9 +8,9 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/api/v1/demo")
 public class DemoProjectController {
 
-    private final DemoProjectService service;
+    private final io.refactorcontrolplane.project.ProjectSource service;
 
-    public DemoProjectController(DemoProjectService service) {
+    public DemoProjectController(io.refactorcontrolplane.project.ProjectSource service) {
         this.service = service;
     }
 

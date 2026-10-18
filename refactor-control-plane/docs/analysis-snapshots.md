@@ -27,6 +27,7 @@
 - Maven：扫描所有 POM，读取当前文件中的直接依赖、Spring Boot parent 和标准 compiler plugin 配置，解析当前 POM 的属性引用。显式 compiler release 优先，不把普通未使用的 `java.version` 属性当作编译目标。
 - npm：读取 package.json 的 dependencies、devDependencies、peerDependencies，保留原始版本范围；区分 Vue、React、Vite、jQuery 的声明。空字符串版本范围保留为有效声明。
 - 源码：Java、JSP、JavaScript、TypeScript、Python、Vue 单文件组件、SQL 文件清单；Java 控制器和仓储注解仅作为组件推断，不证明调用关系。
+- 关系：Maven 标准模块声明、Java import、配置中的 JDBC 协议、SQL 表及引用、控制器路由片段和视图匹配。每条边携带 FACT/INFERENCE 及固定 commit/path/blob 证据；路由和视图是文本推断，不冒充运行时调用图。JDBC 只保留协议，不输出连接地址或凭据。
 - Gradle 等未实现的构建求值、Maven parent/profile 的有效配置、依赖传递解析和部署信息明确作为未覆盖能力。控制器扫描是轻量文本识别，不是完整 AST/调用图分析。
 - 不依据驱动版本猜测数据库服务器版本，不输出未经核查的安全支持期限或漏洞结论。固定文章迁移计划仍是样例专用，不因分析器扩展而自动成为通用规划器。
 
@@ -39,5 +40,6 @@
 - UTF-8 严格解码；候选文件为二进制或其他编码时记录 UNKNOWN。非法路径编码或损坏的对象协议使快照读取失败。
 - 跳过 target、node_modules、.git、.m2-repository 目录。符号链接和子模块不跟随，只记录覆盖限制。
 - XML 禁止 DOCTYPE、外部实体及外部 Schema，最大嵌套深度 128；JSON 拒绝重复键和尾随 token。整个依赖声明验证完成后才发布事实。
+- 关系扫描最多检查 10,000 个候选、输出 500 条边；Java/SQL 注释按语言排除。无匹配的大段空白配置、无终止符 SQL 和大量字面量也受回归约束，不能仅靠结果数量限制计算量。
 
 这些限制属于当前分析覆盖范围，不能据此宣称仓库没有其他语言、组件、风险或依赖。

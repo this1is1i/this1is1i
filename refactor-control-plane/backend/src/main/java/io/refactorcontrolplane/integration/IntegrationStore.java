@@ -12,6 +12,8 @@ public class IntegrationStore {
     private final JdbcTemplate jdbc;
     private final ObjectMapper mapper;
     private final TransactionTemplate transactions;
+    private String scope="";
+    public void bindScope(String value) { scope=value; }
 
     public IntegrationStore(JdbcTemplate jdbc, ObjectMapper mapper, PlatformTransactionManager manager) {
         this.jdbc = jdbc; this.mapper = mapper; this.transactions = new TransactionTemplate(manager);
@@ -19,7 +21,11 @@ public class IntegrationStore {
 
     public record Entry(String id, String kind, String key, String actor, String request, String payload, long revision) {}
 
-    public Optional<Entry> byKey(String key) { return find("operation_key", key); }
+    public Optional<Entry> byKey(String key) {
+        if (jdbc.queryForObject("SELECT COUNT(*) FROM integration_record WHERE operation_key=? AND plan_scope<>?",Long.class,key,scope)>0)
+            throw new IllegalStateException("Integration key belongs to another plan revision");
+        return find("operation_key", key);
+    }
     public Entry get(String id) { return find("id", id).orElseThrow(() -> new IllegalArgumentException("Unknown integration record")); }
     private Optional<Entry> find(String column, String value) {
         return jdbc.query("SELECT * FROM integration_record WHERE " + column + "=?", (rs, n) -> new Entry(
@@ -30,20 +36,24 @@ public class IntegrationStore {
         return jdbc.queryForList("SELECT id FROM integration_record WHERE kind='candidate' ORDER BY id", String.class);
     }
     public boolean enrolled(String taskId) {
-        return jdbc.queryForObject("SELECT COUNT(*) FROM integration_member WHERE task_id=?", Long.class, taskId) > 0;
+        return enrolled(taskId,scope);
     }
+    public boolean enrolled(String taskId,String planScope) {
+        return jdbc.queryForObject("SELECT COUNT(*) FROM integration_member m JOIN integration_record r ON r.id=m.candidate_id WHERE m.task_id=? AND r.plan_scope=?", Long.class, taskId,planScope) > 0;
+    }
+    public List<String> currentCandidates() { return jdbc.queryForList("SELECT id FROM integration_record WHERE kind='candidate' AND plan_scope=?",String.class,scope); }
     public Entry insert(String id, String kind, String key, String actor, Object request, Object payload, List<String> tasks) {
         String requestJson = json(request), payloadJson = json(payload);
         transactions.executeWithoutResult(status -> {
-            jdbc.update("INSERT INTO integration_record(id,kind,operation_key,actor,request_json,payload) VALUES(?,?,?,?,?,?)",
-                    id, kind, key, actor, requestJson, payloadJson);
+            jdbc.update("INSERT INTO integration_record(id,kind,operation_key,actor,request_json,payload,plan_scope) VALUES(?,?,?,?,?,?,?)",
+                    id, kind, key, actor, requestJson, payloadJson,scope);
             tasks.forEach(task -> jdbc.update("INSERT INTO integration_member(candidate_id,task_id) VALUES(?,?)", id, task));
         });
         return get(id);
     }
     public Entry save(Entry before, Object payload) {
-        if (jdbc.update("UPDATE integration_record SET payload=?,revision=revision+1 WHERE id=? AND revision=?",
-                json(payload), before.id(), before.revision()) != 1) throw new IllegalStateException("Integration record changed concurrently");
+        if (jdbc.update("UPDATE integration_record SET payload=?,revision=revision+1 WHERE id=? AND revision=? AND plan_scope=?",
+                json(payload), before.id(), before.revision(),scope) != 1) throw new IllegalStateException("Integration record changed concurrently or belongs to another plan");
         return get(before.id());
     }
     public Entry beginValidation(Entry candidateBefore, IntegrationService.Candidate candidate,

@@ -15,6 +15,7 @@ import org.springframework.transaction.support.TransactionTemplate;
 
 /** One fixed legacy posts snapshot in the local reference H2 database; no remote DB access. */
 @Service
+@org.springframework.boot.autoconfigure.condition.ConditionalOnProperty(name="control-plane.project.mode",havingValue="demo",matchIfMissing=true)
 public class LegacyPostMigrationService {
     private final JdbcTemplate jdbc;
     private final ArticleService articles;

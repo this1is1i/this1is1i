@@ -17,7 +17,9 @@ describe("role workbench", () => {
 
     const html = await renderToString(createSSRApp(component));
 
-    expect(html).toContain("Legacy Blog Modernization");
+    expect(html).toContain("项目重构工作台");
+    expect(html).toContain("项目计划");
+    expect(html).not.toContain("文章管理迁移切片");
     expect(html).toContain("项目经理");
     expect(html).toContain("计划与资源");
     expect(html.match(/data-role-id=/g)).toHaveLength(8);

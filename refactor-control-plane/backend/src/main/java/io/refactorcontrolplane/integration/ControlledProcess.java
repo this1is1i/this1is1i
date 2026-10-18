@@ -7,15 +7,15 @@ import java.util.*;
 import java.util.concurrent.*;
 
 /** Bounded local execution of trusted code. This is NOT an operating-system sandbox. */
-final class ControlledProcess {
-    record Result(int exitCode, boolean timedOut, byte[] stdout, byte[] stderr, boolean truncated) {
-        String out() { return new String(stdout, StandardCharsets.UTF_8); }
-        String err() { return new String(stderr, StandardCharsets.UTF_8); }
-        boolean passed() { return exitCode == 0 && !timedOut && !truncated; }
+public final class ControlledProcess {
+    public record Result(int exitCode, boolean timedOut, byte[] stdout, byte[] stderr, boolean truncated) {
+        public String out() { return new String(stdout, StandardCharsets.UTF_8); }
+        public String err() { return new String(stderr, StandardCharsets.UTF_8); }
+        public boolean passed() { return exitCode == 0 && !timedOut && !truncated; }
     }
     private record Output(byte[] bytes, boolean truncated) {}
 
-    static Result run(Path cwd, List<String> argv, Map<String, String> extra, byte[] input, int seconds, int limit) {
+    public static Result run(Path cwd, List<String> argv, Map<String, String> extra, byte[] input, int seconds, int limit) {
         Process process = null;
         Set<ProcessHandle> observedChildren = ConcurrentHashMap.newKeySet();
         Future<?> monitor = null;

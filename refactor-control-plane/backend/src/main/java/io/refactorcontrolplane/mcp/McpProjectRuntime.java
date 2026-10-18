@@ -2,7 +2,8 @@ package io.refactorcontrolplane.mcp;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.refactorcontrolplane.api.DemoProjectService;
+import io.refactorcontrolplane.project.ProjectSource;
+import io.refactorcontrolplane.executor.ExecutionProtocol;
 import io.refactorcontrolplane.governance.GovernedProject;
 import io.refactorcontrolplane.governance.ProjectRole;
 import io.refactorcontrolplane.governance.QualityGate;
@@ -40,6 +41,7 @@ import org.springframework.stereotype.Service;
 public class McpProjectRuntime {
 
     private final GovernedProject project;
+    private final ProjectSource source;
     private PathLeaseRegistry leases;
     private final RepositoryPathPolicy pathPolicy;
     private final List<String> taskIds;
@@ -51,6 +53,11 @@ public class McpProjectRuntime {
     private final GitWorktreeManager git = new GitWorktreeManager();
     private final Map<String, Execution> executions = new LinkedHashMap<>();
     private final Map<String, String> assignmentOwners = new LinkedHashMap<>();
+    private final Set<String> stoppedExecutions = new LinkedHashSet<>();
+    private final Map<String, ExecutionProtocol.Run> executorRuns = new LinkedHashMap<>();
+    private final ObjectMapper mapper;
+    private final io.refactorcontrolplane.integration.GateEvidencePolicy evidencePolicy;
+    private final Map<String, Map<String,String>> gateEvidence = new LinkedHashMap<>();
     private java.util.function.Consumer<String> integrationMergeGuard = taskId -> {};
 
     public synchronized void integrationMergeGuard(java.util.function.Consumer<String> guard) {
@@ -62,6 +69,7 @@ public class McpProjectRuntime {
 
     /** Captures authoritative, submitted executions in deterministic dependency order. */
     public synchronized List<IntegrationInput> integrationInputs(List<String> requested) {
+        source.requireExecutable();
         if (reconciliationRequired) throw new IllegalStateException("Operation journal requires reconciliation");
         if (requested == null || requested.isEmpty() || requested.size() > 20
                 || new java.util.HashSet<>(requested).size() != requested.size())
@@ -92,12 +100,29 @@ public class McpProjectRuntime {
 
     public synchronized void requireIntegrationAccepted(List<String> ids) {
         integrationInputs(ids);
-        for (String id : ids) if (project.task(id).status() != WorkPackageStatus.ACCEPTED)
-            throw new IllegalStateException("Task has not completed human acceptance: " + id);
+        for (String id : ids) {
+            if (project.task(id).status() != WorkPackageStatus.ACCEPTED)
+                throw new IllegalStateException("Task has not completed human acceptance: " + id);
+            requireGateEvidence(id,Set.of(QualityGate.values()));
+        }
     }
 
     public McpProjectRuntime(
-            DemoProjectService projectService, AuditEventRepository auditEvents, ObjectMapper mapper) {
+            ProjectSource projectService, AuditEventRepository auditEvents, ObjectMapper mapper) {
+        this(projectService,auditEvents,mapper,null);
+    }
+    @org.springframework.beans.factory.annotation.Autowired
+    public McpProjectRuntime(ProjectSource projectService, AuditEventRepository auditEvents, ObjectMapper mapper,
+            io.refactorcontrolplane.integration.GateEvidencePolicy evidencePolicy) {
+        this.source = projectService;
+        this.mapper = mapper;
+        this.evidencePolicy = evidencePolicy;
+        if (source.configured()) integrationMergeGuard=taskId -> {
+            if (evidencePolicy==null) throw new IllegalStateException("Evidence verifier is unavailable");
+            evidencePolicy.requireSingleTaskProposal(taskId);
+        };
+        auditEvents.requireProjectMode(source.configured());
+        auditEvents.bindScope(source.planScope());
         var overview = projectService.overview();
         this.repository = projectService.repository();
         this.pathPolicy = RepositoryPathPolicy.caseInsensitive();
@@ -109,13 +134,14 @@ public class McpProjectRuntime {
         overview.plan().workPackages().forEach(work -> dependencies.put(work.id(), work.dependencies()));
         overview.plan().workPackages().forEach(work -> project.registerTask(new TaskPackage(
                 work.id(), overview.plan().baseCommit(), 1, 1, 1, 1,
-                work.allowedPaths(), Set.of(".git", "backend/data"), work.workingDirectory(),
+                work.allowedPaths(), source.forbiddenPaths(), work.workingDirectory(),
                 work.acceptanceCommands(),
                 WorkPackageStatus.READY)));
         recover(auditEvents, mapper);
     }
 
     public synchronized Object execute(String name, JsonNode arguments) {
+        source.requireExecutable();
         if (reconciliationRequired) throw new IllegalStateException("Operation journal requires restart reconciliation");
         String taskId = requiredText(arguments, "taskId");
         authorize(taskId, requiredText(arguments, "taskToken"));
@@ -124,12 +150,14 @@ public class McpProjectRuntime {
     }
 
     public synchronized void validateToken(JsonNode arguments) {
+        source.requireExecutable();
         if (reconciliationRequired) throw new IllegalStateException("Operation journal requires restart reconciliation");
         String taskId = requiredText(arguments, "taskId");
         authorize(taskId, requiredText(arguments, "taskToken"));
     }
 
     private Object executeWrite(String name, String taskId, JsonNode arguments) {
+        if (name.startsWith("executor:")) return executorCommand(name.substring(9), taskId, arguments);
         if (name.startsWith("operator:")) return operator(name.substring(9), taskId, arguments);
         return switch (name) {
             case "claim_task" -> claim(taskId, arguments);
@@ -148,9 +176,11 @@ public class McpProjectRuntime {
     }
 
     public synchronized List<Map<String, Object>> readyTasks() {
+        if (!source.approved()) return List.of();
         return taskIds.stream().map(project::task)
                 .filter(task -> task.status() == WorkPackageStatus.READY)
                 .filter(task -> eligible(task.id()))
+                .filter(task -> capacityBlockers(task.id()).isEmpty())
                 .map(this::taskView).toList();
     }
 
@@ -170,9 +200,15 @@ public class McpProjectRuntime {
 
     public synchronized Map<String, Object> workbenchSnapshot() {
         var state = new LinkedHashMap<String, Object>(integrationStatus());
+        state.put("evidenceRequired",source.configured());
         state.put("tasks", taskIds.stream().map(id -> {
             var view = new LinkedHashMap<String, Object>(taskView(project.task(id)));
             view.put("owner", assignmentOwners.get(id));
+            view.put("gateEvidence",Map.copyOf(gateEvidence.getOrDefault(id,Map.of())));
+            Execution execution = executions.get(id);
+            if (execution != null && executorRuns.containsKey(execution.executionId())) view.put("executor", executorRuns.get(execution.executionId()));
+            view.put("claimable", source.approved() && !reconciliationRequired && project.task(id).status() == WorkPackageStatus.READY
+                    && eligible(id) && capacityBlockers(id).isEmpty());
             view.put("dependencies", dependencies.getOrDefault(id, Set.of()).stream().sorted().toList());
             var gates = new LinkedHashMap<String, Boolean>();
             for (var gate : QualityGate.values()) gates.put(gate.name(), project.gatePassed(id, gate));
@@ -188,7 +224,8 @@ public class McpProjectRuntime {
 
     public synchronized Projection snapshot() {
         return new Projection(project.snapshot(), leases.activeLeases(), Map.copyOf(executions),
-                Map.copyOf(assignmentOwners), Map.copyOf(assignmentEpochs));
+                Map.copyOf(assignmentOwners), Map.copyOf(assignmentEpochs), Set.copyOf(stoppedExecutions), Map.copyOf(executorRuns),
+                gateEvidence.entrySet().stream().collect(java.util.stream.Collectors.toUnmodifiableMap(Map.Entry::getKey,entry->Map.copyOf(entry.getValue()))));
     }
 
     public synchronized void restore(Projection projection) {
@@ -203,12 +240,32 @@ public class McpProjectRuntime {
         if (projection.assignmentEpochs() != null) {
             assignmentEpochs.clear(); assignmentEpochs.putAll(projection.assignmentEpochs());
         }
+        stoppedExecutions.clear();
+        if (projection.stoppedExecutions() != null) stoppedExecutions.addAll(projection.stoppedExecutions());
+        executorRuns.clear();
+        if (projection.executorRuns() != null) executorRuns.putAll(projection.executorRuns());
+        gateEvidence.clear();
+        if (projection.gateEvidence()!=null) projection.gateEvidence().forEach((task,refs)->gateEvidence.put(task,new LinkedHashMap<>(refs)));
     }
 
     public synchronized void requireReconciliation() { reconciliationRequired = true; }
 
+    public synchronized void requirePlanSwitchSafe() {
+        if (reconciliationRequired || !leases.activeLeases().isEmpty()) throw new IllegalStateException("Resolve the journal and active leases before switching plans");
+        if (source.scheduling() != null && executions.values().stream().anyMatch(this::holdsCapacity))
+            throw new IllegalStateException("Confirm unfinished executions have stopped before switching plans");
+        for (String id : taskIds) if (!Set.of(WorkPackageStatus.READY, WorkPackageStatus.ACCEPTED, WorkPackageStatus.CANCELLED).contains(project.task(id).status()))
+            throw new IllegalStateException("Finish or cancel task before switching plans: " + id);
+    }
+
     public record Projection(GovernedProject.State project, List<PathLease> leases, Map<String, Execution> executions,
-            Map<String, String> assignmentOwners, Map<String, Long> assignmentEpochs) {}
+            Map<String, String> assignmentOwners, Map<String, Long> assignmentEpochs, Set<String> stoppedExecutions,
+            Map<String, ExecutionProtocol.Run> executorRuns, Map<String,Map<String,String>> gateEvidence) {
+        public Projection(GovernedProject.State project,List<PathLease> leases,Map<String,Execution> executions,
+                Map<String,String> owners,Map<String,Long> epochs,Set<String> stopped,Map<String,ExecutionProtocol.Run> runs) {
+            this(project,leases,executions,owners,epochs,stopped,runs,Map.of());
+        }
+    }
 
     public record Execution(String taskId, String executionId, String branch, String path, String baseCommit,
             String commitSha) {
@@ -244,12 +301,20 @@ public class McpProjectRuntime {
         }
     }
 
+    public synchronized long requireAssignedSubject(String taskId, String subjectId) {
+        project.task(taskId);
+        if (!subjectId.equals(assignmentOwners.get(taskId))) throw new SecurityException("Only the assigned subject can claim this task");
+        return assignmentEpochs.get(taskId);
+    }
+
     private Object claim(String taskId, JsonNode arguments) {
         TaskPackage task = project.task(taskId);
         if (task.status() != WorkPackageStatus.READY) {
             throw new IllegalStateException("Task is not READY: " + taskId);
         }
         if (!eligible(taskId)) throw new IllegalStateException("Task prerequisites are not satisfied: " + taskId);
+        var blockers = capacityBlockers(taskId);
+        if (!blockers.isEmpty()) throw new IllegalStateException("Execution capacity unavailable: " + blockers);
         TaskWorktree worktree;
         try {
             worktree = git.createExecution(repository, requiredText(arguments, "_baseCommit"), taskId,
@@ -318,6 +383,8 @@ public class McpProjectRuntime {
         }
         Execution execution = executions.get(taskId);
         if (execution == null) throw new IllegalStateException("No verified execution is bound to this task");
+        if (executorRuns.containsKey(execution.executionId()) && !arguments.path("_executorVerified").asBoolean())
+            throw new IllegalStateException("Managed executions must submit through the bound executor result");
         String commitSha = requiredText(arguments, "commitSha");
         List<String> changedPaths = git.verifiedChangedPaths(repository, execution.worktree(), commitSha);
         if (changedPaths.isEmpty()) throw new IllegalArgumentException("Submission has no changes");
@@ -334,6 +401,7 @@ public class McpProjectRuntime {
                 taskId, changedPaths,
                 requiredText(arguments, "idempotencyKey") + ":domain");
         if (result.accepted()) {
+            gateEvidence.remove(taskId);
             if (task.status() == WorkPackageStatus.CLAIMED) task.moveTo(WorkPackageStatus.RUNNING);
             task.moveTo(WorkPackageStatus.SUBMITTED);
             executions.put(taskId, new Execution(taskId, execution.executionId(), execution.branch(), execution.path(),
@@ -383,6 +451,121 @@ public class McpProjectRuntime {
                 .allMatch(id -> project.task(id).status() == WorkPackageStatus.ACCEPTED && project.currentlyValid(id));
     }
 
+    public record CapacityBlocker(String kind, String resourceId, int capacity, long used) {}
+
+    public synchronized ExecutionProtocol.Run executorRun(String id) { return executorRuns.get(id); }
+    // Local delivery truth, deliberately excluded from durable projections: recovery never redelivers.
+    private final Set<String> dispatchingExecutions = new java.util.HashSet<>();
+    public synchronized void beginExecutorDelivery(String id) {
+        if (!dispatchingExecutions.add(id)) throw new IllegalStateException("Executor delivery already in progress");
+    }
+    public synchronized void endExecutorDelivery(String id) { dispatchingExecutions.remove(id); }
+    public synchronized List<ExecutionProtocol.Run> activeExecutorRuns() {
+        return executorRuns.values().stream().filter(run -> !run.terminal()).toList();
+    }
+    private void requireExecutorBinding(ExecutionProtocol.Request request) {
+        Execution current = executions.get(request.execution().taskId());
+        if (current == null || !current.executionId().equals(request.execution().executionId())
+                || !source.planScope().equals(request.planScope()) || request.contextVersion() != project.contextVersion()
+                || !java.util.Objects.equals(assignmentEpochs.get(current.taskId()), request.assignmentEpoch())
+                || !java.util.Objects.equals(assignmentOwners.get(current.taskId()), request.owner())
+                || !project.currentlyValid(current.taskId()) || stoppedExecutions.contains(current.executionId()))
+            throw new IllegalStateException("Executor result belongs to an obsolete or stopped execution");
+    }
+    private Object executorCommand(String action, String taskId, JsonNode arguments) {
+        try {
+            String id = requiredText(arguments, "taskExecutionId");
+            if (action.equals("prepare")) {
+                var request = mapper.treeToValue(arguments.path("request"), ExecutionProtocol.Request.class);
+                requireExecutorBinding(request);
+                if (!request.execution().taskId().equals(taskId) || !request.execution().executionId().equals(id)
+                        || source.scheduling() == null || project.task(taskId).status() != WorkPackageStatus.CLAIMED
+                        || executorRuns.containsKey(id) || !request.execution().equals(executions.get(taskId))
+                        || !request.allowedPaths().equals(project.task(taskId).allowedPaths())
+                        || !request.forbiddenPaths().equals(project.task(taskId).forbiddenPaths()))
+                    throw new IllegalStateException("Executor requires a fresh claimed execution and configured capacity");
+                long seconds = Duration.between(Instant.now(), request.deadline()).toSeconds();
+                if (seconds < 1 || seconds > 86400) throw new IllegalArgumentException("Invalid execution deadline");
+                for (String path : request.allowedPaths()) {
+                    var reservation = leases.reserve(new LeaseRequest(request.owner(), id, path, OwnershipMode.EXCLUSIVE_WRITE, Duration.ofSeconds(seconds)));
+                    if (!reservation.accepted()) throw new IllegalStateException("Executor paths are leased by another execution");
+                }
+                project.task(taskId).moveTo(WorkPackageStatus.RUNNING);
+                var run = new ExecutionProtocol.Run(request, "UNKNOWN", null); executorRuns.put(id, run); return run;
+            }
+            if (!Set.of("observe", "unknown").contains(action)) throw new IllegalArgumentException("Unknown executor operation");
+            var run = executorRuns.get(id);
+            if (run == null || !run.request().execution().taskId().equals(taskId)) throw new IllegalStateException("Unknown executor run");
+            requireExecutorBinding(run.request());
+            if (action.equals("unknown")) {
+                if (run.terminal()) return run;
+                var unknown = new ExecutionProtocol.Run(run.request(), "UNKNOWN", run.result()); executorRuns.put(id, unknown); return unknown;
+            }
+            var result = mapper.treeToValue(arguments.path("result"), ExecutionProtocol.Result.class);
+            if (!id.equals(result.executionId()) || !run.request().requestHash().equals(result.requestHash())
+                    || result.sequence() < 1 || !Set.of("RUNNING", "SUCCEEDED", "FAILED").contains(result.state()))
+                throw new IllegalStateException("Executor result binding or state is invalid");
+            if (run.result() != null && result.sequence() <= run.result().sequence()) {
+                if (!result.equals(run.result())) throw new IllegalStateException("Executor result sequence is stale or contradictory");
+                var heartbeat = new ExecutionProtocol.Run(run.request(), result.state(), result); executorRuns.put(id, heartbeat); return heartbeat;
+            }
+            if (run.terminal()) throw new IllegalStateException("A terminal execution cannot be replaced");
+            if (result.state().equals("SUCCEEDED")) {
+                if (result.checks().size() != run.request().checks().size()
+                        || result.checks().stream().map(ExecutionProtocol.CheckResult::id).distinct().count() != result.checks().size()
+                        || result.checks().stream().anyMatch(check -> check.exitCode() != 0 || check.timedOut() || check.truncated())
+                        || !result.checks().stream().map(ExecutionProtocol.CheckResult::id).collect(java.util.stream.Collectors.toSet())
+                            .equals(run.request().checks().stream().map(io.refactorcontrolplane.integration.IntegrationProfiles.Check::id).collect(java.util.stream.Collectors.toSet())))
+                    throw new IllegalStateException("Executor did not pass all approved checks");
+                // A terminal result can arrive after restart/expiry. Reconcile ownership without
+                // renewing a live worker or displacing any lease acquired by another execution.
+                var active = leases.activeLeases();
+                for (String path : run.request().allowedPaths()) {
+                    if (active.stream().anyMatch(lease -> lease.taskExecutionId().equals(id)
+                            && lease.mode() == OwnershipMode.EXCLUSIVE_WRITE && pathPolicy.covers(lease.resourcePath(), path))) continue;
+                    var reservation = leases.reserve(new LeaseRequest(run.request().owner(), id, path,
+                            OwnershipMode.EXCLUSIVE_WRITE, Duration.ofSeconds(300)));
+                    if (!reservation.accepted()) throw new IllegalStateException("Reconciliation paths are leased by another execution");
+                }
+                var submission = ((com.fasterxml.jackson.databind.node.ObjectNode) arguments).deepCopy();
+                submission.put("commitSha", result.commitSha()).put("_executorVerified", true);
+                if (!submit(taskId, submission).accepted()) throw new IllegalStateException("Executor changed unauthorized paths");
+            } else if (result.state().equals("FAILED")) {
+                block(taskId); stoppedExecutions.add(id); releaseExecutionLeases(taskId); assignmentEpochs.merge(taskId, 1L, Long::sum);
+            }
+            var updated = new ExecutionProtocol.Run(run.request(), result.state(), result);
+            executorRuns.put(id, updated); return updated;
+        } catch (java.io.IOException ex) { throw new IllegalArgumentException("Invalid executor payload"); }
+    }
+
+    private boolean holdsCapacity(Execution execution) {
+        // BLOCKED, CANCELLED, STALE and elapsed lease TTL do not prove the worker stopped.
+        return execution.commitSha() == null && !stoppedExecutions.contains(execution.executionId());
+    }
+
+    private List<CapacityBlocker> capacityBlockers(String taskId) {
+        var policy = source.scheduling();
+        if (policy == null || project.task(taskId).status() != WorkPackageStatus.READY) return List.of();
+        var active = executions.values().stream().filter(this::holdsCapacity).toList();
+        var blockers = new java.util.ArrayList<CapacityBlocker>();
+        String actor = assignmentOwners.get(taskId);
+        int capacity = policy.actorCapacities().getOrDefault(actor, 0);
+        long used = active.stream().filter(execution -> actor.equals(assignmentOwners.get(execution.taskId()))).count();
+        if (used >= capacity) blockers.add(new CapacityBlocker("ACTOR", actor, capacity, used));
+        for (String environment : source.taskEnvironments(taskId).stream().sorted().toList()) {
+            capacity = policy.environmentCapacities().getOrDefault(environment, 0);
+            used = active.stream().filter(execution -> source.taskEnvironments(execution.taskId()).contains(environment)).count();
+            if (used >= capacity) blockers.add(new CapacityBlocker("ENVIRONMENT", environment, capacity, used));
+        }
+        return List.copyOf(blockers);
+    }
+
+    private void requireCapacityReleased(String taskId) {
+        Execution execution = executions.get(taskId);
+        if (source.scheduling() != null && execution != null && holdsCapacity(execution))
+            throw new IllegalStateException("Confirm this execution has stopped before retry or revalidation");
+    }
+
     private Set<String> downstreamClosure(Set<String> roots) {
         Set<String> affected = new LinkedHashSet<>(roots);
         roots.forEach(project::task);
@@ -411,6 +594,29 @@ public class McpProjectRuntime {
         }
         if (subject.equals(assignmentOwners.get(taskId))) throw new SecurityException("Executors cannot approve their own work");
         String key = requiredText(arguments, "idempotencyKey");
+        if (action.equals("confirm_execution_stopped")) {
+            requireRole(roles, ProjectRole.PROJECT_MANAGER);
+            Execution execution = executions.get(taskId);
+            if (execution == null || !execution.executionId().equals(requiredText(arguments, "taskExecutionId")))
+                throw new SecurityException("Stop confirmation must identify the current execution");
+            if (dispatchingExecutions.contains(execution.executionId()))
+                throw new IllegalStateException("Wait for in-flight executor delivery before confirming it stopped");
+            TaskPackage task = project.task(taskId);
+            if (!Set.of(WorkPackageStatus.CLAIMED, WorkPackageStatus.RUNNING, WorkPackageStatus.BLOCKED,
+                    WorkPackageStatus.CANCELLED, WorkPackageStatus.STALE).contains(task.status()))
+                throw new IllegalStateException("Stop confirmation requires an unfinished execution");
+            String evidence = requiredText(arguments, "evidenceRef");
+            if (task.status() == WorkPackageStatus.CLAIMED || task.status() == WorkPackageStatus.RUNNING)
+                task.moveTo(WorkPackageStatus.BLOCKED);
+            if (stoppedExecutions.add(execution.executionId())) assignmentEpochs.merge(taskId, 1L, Long::sum);
+            var managed = executorRuns.get(execution.executionId());
+            if (managed != null && !managed.terminal()) executorRuns.put(execution.executionId(),
+                    new ExecutionProtocol.Run(managed.request(), "STOPPED", managed.result()));
+            releaseExecutionLeases(taskId);
+            project.recordEvidence(key + ":evidence", taskId, Map.of("actor", subject, "action", action,
+                    "executionId", execution.executionId(), "evidenceRef", evidence));
+            return Map.of("task", taskView(project.task(taskId)));
+        }
         if (action.equals("retry_task")) {
             requireRole(roles, ProjectRole.PROJECT_MANAGER);
             TaskPackage task = project.task(taskId);
@@ -418,16 +624,20 @@ public class McpProjectRuntime {
                     && task.status() != WorkPackageStatus.REJECTED)) {
                 throw new IllegalStateException("Only a valid blocked or rejected task can be retried");
             }
+            requireCapacityReleased(taskId);
             task.moveTo(WorkPackageStatus.READY);
             releaseExecutionLeases(taskId);
             executions.remove(taskId);
+            gateEvidence.remove(taskId);
             assignmentEpochs.merge(taskId, 1L, Long::sum);
             project.recordEvidence(key + ":evidence", taskId, Map.of("actor", subject, "action", action));
             return Map.of("task", taskView(task));
         }
         if (action.equals("revalidate_task")) {
             requireRole(roles, ProjectRole.ARCHITECT);
+            requireCapacityReleased(taskId);
             project.revalidateTask(taskId, key + ":domain");
+            gateEvidence.remove(taskId);
             releaseExecutionLeases(taskId);
             executions.remove(taskId);
             assignmentEpochs.merge(taskId, 1L, Long::sum);
@@ -453,26 +663,41 @@ public class McpProjectRuntime {
         switch (action) {
             case "start_review" -> { task.moveTo(WorkPackageStatus.CODE_REVIEW); result = taskView(task); }
             case "start_testing" -> {
+                requireGateEvidence(taskId,Set.of(QualityGate.CODE_REVIEW));
                 if (!project.gatePassed(taskId, QualityGate.CODE_REVIEW)) {
                     throw new IllegalStateException("Code review must pass before testing");
                 }
                 task.moveTo(WorkPackageStatus.TESTING); result = taskView(task);
             }
             case "record_gate" -> {
-                requiredText(arguments, "evidenceRef");
+                if (source.configured() && !execution.executionId().equals(requiredText(arguments,"taskExecutionId")))
+                    throw new IllegalStateException("Gate approval must identify the exact submitted execution");
                 if (!arguments.path("passed").isBoolean()) throw new IllegalArgumentException("passed must be boolean");
-                project.recordGate(taskId, QualityGate.valueOf(requiredText(arguments, "gate")),
-                        arguments.path("passed").asBoolean(), role, key + ":domain");
+                QualityGate gate=QualityGate.valueOf(requiredText(arguments,"gate"));
+                boolean passed=arguments.path("passed").asBoolean();
+                boolean renewal=source.configured() && passed && project.gatePassed(taskId,gate)
+                        && (task.status()==WorkPackageStatus.ACCEPTED || (task.status()==WorkPackageStatus.TESTING && gate==QualityGate.CODE_REVIEW));
+                if (!renewal && task.status()!=(gate==QualityGate.CODE_REVIEW?WorkPackageStatus.CODE_REVIEW:WorkPackageStatus.TESTING))
+                    throw new IllegalStateException("Gate is not available in this task state");
+                String ref;
+                if (source.configured()) {
+                    if (evidencePolicy==null) throw new IllegalStateException("Evidence verifier is unavailable");
+                    ref=evidencePolicy.record(key,evidenceBinding(taskId),gate,passed,subject,assignmentOwners.get(taskId),arguments,this::integrationInputs);
+                } else ref=requiredText(arguments,"evidenceRef");
+                if (!renewal) project.recordGate(taskId,gate,passed,role,key+":domain");
+                gateEvidence.computeIfAbsent(taskId,ignored->new LinkedHashMap<>()).put(gate.name(),ref);
                 if (!arguments.path("passed").asBoolean()) {
                     task.moveTo(WorkPackageStatus.REJECTED);
                     releaseExecutionLeases(taskId);
                 }
-                result = Map.of("recorded", true);
+                result = Map.of("recorded", true,"evidenceRef",ref);
             }
             case "accept_task" -> {
+                requireGateEvidence(taskId,Set.of(QualityGate.values()));
                 project.acceptTask(taskId); releaseExecutionLeases(taskId); result = taskView(task);
             }
             case "merge_proposal" -> {
+                requireGateEvidence(taskId,Set.of(QualityGate.values()));
                 integrationMergeGuard.accept(taskId);
                 result = project.createManualMergeProposal(taskId, execution.branch(), execution.commitSha());
             }
@@ -480,8 +705,25 @@ public class McpProjectRuntime {
         }
         project.recordEvidence(key + ":evidence", taskId, Map.of("actor", subject, "role", role.name(),
                 "action", action, "executionId", execution.executionId(), "commitSha", execution.commitSha(),
-                "evidenceRef", arguments.path("evidenceRef").asText("")));
+                "evidenceRef", action.equals("record_gate")?gateEvidence.get(taskId).get(requiredText(arguments,"gate")):arguments.path("evidenceRef").asText("")));
         return result;
+    }
+
+    private io.refactorcontrolplane.governance.EvidenceStore.Binding evidenceBinding(String taskId) {
+        var task=project.task(taskId); var execution=executions.get(taskId);
+        if (!project.currentlyValid(taskId) || execution==null || execution.commitSha()==null) throw new IllegalStateException("Evidence requires a current submitted execution");
+        git.verifiedChangedPaths(repository,execution.worktree(),execution.commitSha());
+        return new io.refactorcontrolplane.governance.EvidenceStore.Binding(source.planScope(),taskId,execution.executionId(),execution.commitSha(),
+                task.contextVersion(),task.contractVersion(),task.schemaVersion(),task.adrVersion());
+    }
+    private void requireGateEvidence(String taskId,Set<QualityGate> gates) {
+        if (!source.configured()) return;
+        if (evidencePolicy==null) throw new IllegalStateException("Evidence verifier is unavailable");
+        var binding=evidenceBinding(taskId);
+        for (QualityGate gate:gates) {
+            if (!project.gatePassed(taskId,gate)) throw new IllegalStateException("Gate has not passed: "+gate);
+            evidencePolicy.verify(gateEvidence.getOrDefault(taskId,Map.of()).get(gate.name()),binding,gate,true,null,assignmentOwners.get(taskId),this::integrationInputs);
+        }
     }
 
     private static void requireRole(Set<String> roles, ProjectRole role) {
@@ -545,11 +787,14 @@ public class McpProjectRuntime {
         view.put("acceptanceCommands", task.acceptanceCommands());
         view.put("status", task.status());
         view.put("currentlyValid", project.currentlyValid(task.id()));
+        view.put("capacityBlockers", capacityBlockers(task.id()));
+        view.put("capacityHeld", source.scheduling() != null && executions.containsKey(task.id()) && holdsCapacity(executions.get(task.id())));
         if (executions.containsKey(task.id())) view.put("execution", executions.get(task.id()));
         return Map.copyOf(view);
     }
 
     private void recover(AuditEventRepository auditEvents, ObjectMapper mapper) {
+        if (source.configured() && !auditEvents.findAll().isEmpty()) source.requireExecutable();
         for (PersistedAuditEvent event : auditEvents.findAll()) {
             if (event.status().equals("FAILED")) continue;
             try {

@@ -3,11 +3,18 @@ import { reactive } from "vue";
 export interface Execution { executionId: string; branch: string; path: string; baseCommit: string; commitSha: string | null }
 export interface Task {
   id: string; status: string; currentlyValid: boolean; owner: string; dependencies: string[];
-  gates: Record<string, boolean>; execution?: Execution; contextVersion: number; contractVersion: number; schemaVersion: number;
+  gates: Record<string, boolean>; gateEvidence?: Record<string, string>; execution?: Execution; contextVersion: number; contractVersion: number; schemaVersion: number;
+  claimable?: boolean; allowedPaths?: string[]; forbiddenPaths?: string[]; workingDirectory?: string; acceptanceCommands?: string[];
+  capacityHeld?: boolean;
+  executor?: { state: string; observedAt: string; request: { executorId: string; deadline: string }; result?: { sequence: number; commitSha: string | null; checks: { id: string; exitCode: number; timedOut: boolean; truncated: boolean }[] } | null };
+  capacityBlockers?: { kind: "ACTOR" | "ENVIRONMENT"; resourceId: string; capacity: number; used: number }[];
 }
 export interface Snapshot {
   projectId: string; subjectId: string; roles: string[]; contextVersion: number; reconciliationRequired: boolean;
   tasks: Task[]; profiles: { id: string; version: string; checks: string[] }[];
+  assignees?: { subjectId: string; roles: string[] }[];
+  executors?: { id: string; kind: string }[];
+  evidenceRequired?: boolean;
   activeLeases: { leaseId: string; resourcePath: string; taskExecutionId: string; expiresAt: string }[];
   events: { sequence: number; type: string; subject: string; occurredAt: string; details: Record<string, string> }[];
 }
@@ -93,9 +100,15 @@ export function createWorkbench(fetcher: typeof fetch = fetch, newKey: () => str
   }
   const hasRole = (role: string) => !!state.snapshot?.roles.includes(role);
   const writable = () => state.fresh && !!state.snapshot && !state.snapshot.reconciliationRequired && !state.busy && !state.pending;
+  const canAssign = (task: Task) => writable() && hasRole("PROJECT_MANAGER") && task.currentlyValid && task.status === "READY" && !task.execution;
+  const canClaim = (task: Task) => writable() && task.currentlyValid && task.status === "READY" && !task.execution
+    && task.claimable === true && task.owner === state.snapshot?.subjectId;
+  const canDispatch = (task: Task) => writable() && task.currentlyValid && task.status === "CLAIMED" && !!task.execution
+    && task.capacityHeld === true && !task.executor && task.owner === state.snapshot?.subjectId;
   const independent = () => !!state.detail && !state.detail.candidate.plan.inputs.some(input => input.owner === state.snapshot?.subjectId);
   const currentCandidate = () => writable() && state.detailFresh && !!state.detail?.currentlyValid && state.detail.candidate.state === "READY" && independent();
   function canValidate() { return currentCandidate() && hasRole("QA_LEAD") && state.detail?.validation?.state !== "RUNNING"; }
+  const canReconcile = () => writable() && state.detailFresh && independent() && hasRole("QA_LEAD") && state.detail?.validation?.state === "RUNNING";
   function canPropose() {
     const detail = state.detail;
     return currentCandidate() && hasRole("ENGINEERING_LEAD") && !!detail?.validation && detail.validation.state === "PASSED"
@@ -105,15 +118,28 @@ export function createWorkbench(fetcher: typeof fetch = fetch, newKey: () => str
   }
   function canTask(task: Task, action: string, gate?: string) {
     if (!writable() || task.owner === state.snapshot?.subjectId) return false;
-    if (action === "revalidate_task") return hasRole("ARCHITECT") && !task.currentlyValid && task.status !== "CANCELLED";
+    if (action === "confirm_execution_stopped") return hasRole("PROJECT_MANAGER") && task.capacityHeld === true
+      && !!task.execution?.executionId && ["CLAIMED", "RUNNING", "BLOCKED", "CANCELLED", "STALE"].includes(task.status);
+    if (action === "revalidate_task") return hasRole("ARCHITECT") && !task.capacityHeld && !task.currentlyValid && task.status !== "CANCELLED";
     if (!task.currentlyValid) return false;
-    if (action === "retry_task") return hasRole("PROJECT_MANAGER") && ["REJECTED", "BLOCKED"].includes(task.status);
+    if (action === "retry_task") return hasRole("PROJECT_MANAGER") && !task.capacityHeld && ["REJECTED", "BLOCKED"].includes(task.status);
     if (!task.execution?.commitSha) return false;
     if (action === "start_review") return hasRole("ENGINEERING_LEAD") && task.status === "SUBMITTED";
     if (action === "start_testing") return hasRole("QA_LEAD") && task.status === "CODE_REVIEW" && task.gates.CODE_REVIEW === true;
     if (action === "accept_task") return hasRole("BUSINESS_APPROVER") && task.status === "TESTING" && Object.keys(gateRoles).every(key => task.gates[key]);
-    if (action === "record_gate" && gate) return hasRole(gateRoles[gate] ?? "") && task.status === (gate === "CODE_REVIEW" ? "CODE_REVIEW" : "TESTING");
+    if (action === "record_gate" && gate) return hasRole(gateRoles[gate] ?? "") && (task.status === (gate === "CODE_REVIEW" ? "CODE_REVIEW" : "TESTING")
+      || (!!state.snapshot?.evidenceRequired && task.gates[gate] === true
+        && (task.status === "ACCEPTED" || (task.status === "TESTING" && gate === "CODE_REVIEW"))));
     return false;
+  }
+  function canRecordGate(task: Task, gate: string, passed: boolean, statement?: string) {
+    if (!canTask(task, "record_gate", gate) || (!passed && (task.status === "ACCEPTED" || (task.status === "TESTING" && gate === "CODE_REVIEW")))) return false;
+    if (!state.snapshot?.evidenceRequired || ["CODE_REVIEW", "BUSINESS_ACCEPTANCE"].includes(gate)) return !!statement?.trim();
+    const detail = state.detail, validation = detail?.validation;
+    return currentCandidate() && detail!.candidate.plan.inputs.some(input => input.taskId === task.id)
+      && !!validation && validation.state === (passed ? "PASSED" : "FAILED")
+      && detail!.candidate.latestValidation === validation.id && validation.fingerprint === detail!.candidate.plan.fingerprint
+      && validation.commitSha === detail!.candidate.assembly?.commit;
   }
   function dependencyClosure(ids: string[]) {
     const included = new Set<string>(), visiting = new Set<string>();
@@ -173,18 +199,65 @@ export function createWorkbench(fetcher: typeof fetch = fetch, newKey: () => str
     await run({ path: `${ROOT}/${encodeURIComponent(state.detail.candidate.plan.id)}/proposal`, label: "人工合并建议",
       body: { expectedFingerprint: state.detail.candidate.plan.fingerprint, validationId: state.detail.validation!.id, idempotencyKey: newKey() } });
   }
+  async function reconcile(reason:string) {
+    if(!canReconcile()||!state.detail)return;
+    if(!reason.trim()){state.error="请先核对进程和验证工作目录，再填写对账说明。";return;}
+    await run({path:`${ROOT}/${encodeURIComponent(state.detail.candidate.plan.id)}/reconcile-validation`,label:"未知验证对账",
+      body:{idempotencyKey:newKey(),expectedFingerprint:state.detail.candidate.plan.fingerprint,validationId:state.detail.validation!.id,reason:reason.trim()}});
+  }
   async function taskCommand(id: string, action: string, gate?: string, passed?: boolean, evidenceRef?: string) {
     const task = state.snapshot?.tasks.find(task => task.id === id);
     if (!task || !canTask(task, action, gate)) return;
-    if (action === "record_gate" && !evidenceRef?.trim()) { state.error = "门禁审批需要填写证据引用。"; return; }
+    let gateFields: Record<string, unknown> = {};
+    if (action === "record_gate") {
+      if (typeof passed !== "boolean" || !gate || !canRecordGate(task, gate, passed, evidenceRef)) {
+        state.error = state.snapshot?.evidenceRequired ? "请填写评审或业务说明；测试门禁须选择包含本任务、结果与审批一致的最新有效平台验证。已验收任务只能更新通过证据。" : "门禁审批需要填写证据引用。";
+        return;
+      }
+      gateFields = { gate, passed, ...(state.snapshot?.evidenceRequired
+        ? { taskExecutionId: task.execution!.executionId, ...(["CODE_REVIEW", "BUSINESS_ACCEPTANCE"].includes(gate) ? { statement: evidenceRef!.trim() }
+          : { candidateId: state.detail!.candidate.plan.id, validationId: state.detail!.validation!.id }) }
+        : { evidenceRef: evidenceRef!.trim() }) };
+    }
+    if (action === "confirm_execution_stopped" && !evidenceRef?.trim()) { state.error = "请先确认执行进程已停止，并填写核对证据。"; return; }
     await run({ path: "/api/v1/governance/commands", label: "任务操作", body: {
       taskId: id, action, expectedVersion: state.snapshot!.contextVersion, idempotencyKey: newKey(),
       ...(task.execution?.commitSha ? { commitSha: task.execution.commitSha } : {}),
-      ...(action === "record_gate" ? { gate, passed, evidenceRef: evidenceRef!.trim() } : {})
+      ...(action === "confirm_execution_stopped" ? { taskExecutionId: task.execution!.executionId, evidenceRef: evidenceRef!.trim() } : {}),
+      ...gateFields
     } });
   }
+  async function assign(id: string, assignee: string) {
+    const task = state.snapshot?.tasks.find(task => task.id === id);
+    if (!task || !canAssign(task)) return;
+    if (!state.snapshot?.assignees?.some(member => member.subjectId === assignee)) { state.error = "请选择本项目成员。"; return; }
+    await run({ path: "/api/v1/workbench/assign", label: "任务分配", body: {
+      taskId: id, assignee, expectedVersion: state.snapshot.contextVersion, idempotencyKey: newKey()
+    } });
+  }
+  async function claim(id: string) {
+    const task = state.snapshot?.tasks.find(task => task.id === id);
+    if (!task || !canClaim(task)) return;
+    await run({ path: "/api/v1/workbench/claim", label: "任务领取", body: {
+      taskId: id, expectedVersion: state.snapshot!.contextVersion, idempotencyKey: newKey()
+    } });
+  }
+  async function dispatchExecutor(id: string, executorId: string) {
+    const task = state.snapshot?.tasks.find(task => task.id === id);
+    if (!task || !canDispatch(task)) return;
+    if (!state.snapshot?.executors?.some(executor => executor.id === executorId)) { state.error = "请选择项目已配置的执行器。"; return; }
+    await run({ path: `/api/v1/executions/${encodeURIComponent(task.execution!.executionId)}/dispatch`, label: "执行器投递", body: {
+      taskId: id, executorId, expectedVersion: state.snapshot.contextVersion, idempotencyKey: newKey()
+    } });
+  }
+  async function refreshExecutor(id: string) {
+    const task = state.snapshot?.tasks.find(task => task.id === id);
+    if (!task?.executor || !task.execution || !writable() || task.owner !== state.snapshot?.subjectId) return;
+    await run({ path: `/api/v1/executions/${encodeURIComponent(task.execution.executionId)}/refresh`, label: "执行状态查询", body: {} });
+  }
   return { state, login, logout, refresh, select, hasRole, writable, canValidate, canPropose, canTask, dependencyClosure,
-    createCandidate, validate, propose, taskCommand,
+    canAssign, canClaim, assign, claim, canDispatch, dispatchExecutor, refreshExecutor, canReconcile, reconcile,
+    createCandidate, validate, propose, taskCommand, canRecordGate,
     acknowledgePending: () => { if (state.fresh && !state.busy) { state.pending = null; state.notice = "已结束本页重试记录；服务端操作和证据仍保留。"; } },
     retry: async () => { if (state.pending) await run({ ...state.pending, body: { ...state.pending.body } }); } };
 }

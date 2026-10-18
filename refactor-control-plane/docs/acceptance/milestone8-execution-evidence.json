@@ -1,0 +1,33 @@
+{
+  "mainAfter" : "7d230580858c315d668d23f13a752686cc81c282",
+  "baseCommit" : "7d230580858c315d668d23f13a752686cc81c282",
+  "verifiedAt" : "2026-10-13T14:09:20.449430600Z",
+  "httpPuts" : 1,
+  "overlapMillis" : 952,
+  "recovery" : "file-H2 reopen plus lost durable completion acknowledgement",
+  "executions" : [ {
+    "checkStarted" : "2026-10-13T14:09:09.507613500Z",
+    "checkPid" : "48308",
+    "commit" : "96c88370eabcab5270f6f3abe04b029661ba0b53",
+    "task" : "CAT-1",
+    "executionId" : "81b99ed5-02b2-4147-b8c6-7938bec97664",
+    "checkFinished" : "2026-10-13T14:09:11.152616500Z",
+    "branch" : "codex/task-cat-1-81b99ed5-02b2-4147-b8c6-7938bec97664-11c2eeefdfd1"
+  }, {
+    "checkStarted" : "2026-10-13T14:09:08.485094Z",
+    "checkPid" : "52788",
+    "commit" : "204a12ba4d5e66086015be30423a82a1db778ef5",
+    "task" : "CAT-2",
+    "executionId" : "4fd4f727-200d-402c-946e-dfe780e74497",
+    "checkFinished" : "2026-10-13T14:09:11.121090600Z",
+    "branch" : "codex/task-cat-2-4fd4f727-200d-402c-946e-dfe780e74497-e47539932750"
+  }, {
+    "checkStarted" : "2026-10-13T14:09:10.168961900Z",
+    "checkPid" : "60012",
+    "commit" : "50c06ae21fca266e734b7210f8da5dec252c8749",
+    "task" : "CAT-3",
+    "executionId" : "a8bf28d4-c809-40d2-b190-d05a6977ca62",
+    "checkFinished" : "2026-10-13T14:09:17.553334200Z",
+    "branch" : "codex/task-cat-3-a8bf28d4-c809-40d2-b190-d05a6977ca62-51744a84a171"
+  } ]
+}

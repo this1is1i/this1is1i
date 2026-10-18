@@ -5,9 +5,13 @@ import { createWorkbench } from "./workbench";
 const model = createWorkbench();
 const state = model.state;
 const token = ref("");
+const reconciliationReason = ref("");
 const selectedTasks = ref<string[]>([]);
 const profileId = ref("");
 const evidence = ref<Record<string, string>>({});
+const stopEvidence = ref<Record<string, string>>({});
+const assignees = ref<Record<string, string>>({});
+const executorChoices = ref<Record<string, string>>({});
 const gates = ["CODE_REVIEW", "UNIT_TEST", "INTEGRATION_TEST", "BUSINESS_ACCEPTANCE"];
 const gateLabels: Record<string, string> = { CODE_REVIEW: "代码评审", UNIT_TEST: "单元测试", INTEGRATION_TEST: "集成测试", BUSINESS_ACCEPTANCE: "业务验收" };
 const labels: Record<string, string> = { READY: "就绪", PREPARING: "准备中", ASSEMBLED: "待发布", CONFLICTED: "有冲突", STALE: "已过期", PASSED: "通过", FAILED: "失败", RUNNING: "执行中 / 待对账", SUBMITTED: "已提交", CODE_REVIEW: "评审中", TESTING: "测试中", ACCEPTED: "已验收", REJECTED: "已拒绝", CLAIMED: "已领取", BLOCKED: "已阻塞", CANCELLED: "已取消" };
@@ -25,11 +29,11 @@ const closure = computed(() => {
   try { return model.dependencyClosure(selectedTasks.value).join(" → "); } catch (error) { return (error as Error).message; }
 });
 async function login() {
-  const value = token.value; token.value = ""; selectedTasks.value = []; evidence.value = {}; profileId.value = "";
+  const value = token.value; token.value = ""; selectedTasks.value = []; evidence.value = {}; stopEvidence.value = {}; assignees.value = {}; executorChoices.value = {}; profileId.value = "";
   await model.login(value);
   profileId.value = state.snapshot?.profiles[0]?.id ?? "";
 }
-function logout() { token.value = ""; selectedTasks.value = []; evidence.value = {}; model.logout(); }
+function logout() { token.value = ""; selectedTasks.value = []; evidence.value = {}; stopEvidence.value = {}; assignees.value = {}; executorChoices.value = {}; model.logout(); }
 onBeforeUnmount(() => model.logout());
 </script>
 
@@ -107,6 +111,7 @@ onBeforeUnmount(() => model.logout());
             <details v-if="state.detail.candidate.assembly?.evidence"><summary>合并原始证据</summary><pre>{{ state.detail.candidate.assembly.evidence }}</pre></details>
             <div class="validation-summary"><h4>最新组合验证：{{ state.detail.validation ? status(state.detail.validation.state) : "尚未执行" }}</h4>
               <p v-if="state.detail.validation?.state === 'RUNNING'" class="notice warning">记录尚未完成。刷新确认进度；服务重启后需维护者检查该次执行，不能自动重跑。</p>
+              <div v-if="state.detail.validation?.state === 'RUNNING'"><label>对账说明<input v-model="reconciliationReason" maxlength="2000" placeholder="确认进程已停止，记录工作目录核查结果"></label><button class="text-button" type="button" :disabled="!model.canReconcile()||!reconciliationReason.trim()" @click="model.reconcile(reconciliationReason)">记录验证已中断</button><p class="muted">保留原始记录；该操作不会将验证标为通过。</p></div>
               <p v-if="state.detail.validation?.detail" class="notice warning">{{ state.detail.validation.detail }}</p>
               <details v-for="check in state.detail.validation?.checks ?? []" :key="check.checkId"><summary>{{ check.checkId }} · 退出码 {{ check.exitCode }} {{ check.timedOut ? '· 超时' : '' }} {{ check.truncated ? '· 日志超限' : '' }}</summary><code>{{ check.argv.join(' ') }}</code><pre>{{ check.stdout || "无标准输出" }}</pre><pre v-if="check.stderr">{{ check.stderr }}</pre></details>
             </div>
@@ -118,14 +123,47 @@ onBeforeUnmount(() => model.logout());
       </section>
 
       <section class="panel" aria-label="任务审批">
-        <div class="panel-heading"><div><span class="eyebrow">独立审批 / 返工</span><h3>工作包与质量门禁</h3></div></div>
+        <div class="panel-heading"><div><span class="eyebrow">分配 / 领取 / 独立审批</span><h3>工作包与质量门禁</h3></div></div>
         <div class="panel-body task-cards"><article v-for="task in state.snapshot.tasks" :key="task.id" class="task-card">
           <div class="task-title"><h4>{{ task.id }} <small>{{ task.owner }}</small></h4><span class="status-pill" :class="{ blocked: !task.currentlyValid || ['REJECTED', 'BLOCKED'].includes(task.status) }">{{ status(task.status) }}{{ task.currentlyValid ? '' : ' · 已失效' }}</span></div>
           <p class="muted">依赖：{{ task.dependencies.join('、') || '无' }} · API v{{ task.contractVersion }} / Schema v{{ task.schemaVersion }}</p><code v-if="task.execution?.commitSha">{{ task.execution.commitSha }}</code>
+          <p v-for="blocker in task.capacityBlockers ?? []" :key="blocker.kind + ':' + blocker.resourceId" class="muted">
+            {{ blocker.kind === 'ACTOR' ? '执行者' : '环境' }} {{ blocker.resourceId }}：已占用 {{ blocker.used }} / {{ blocker.capacity }} 槽位{{ blocker.capacity === 0 ? '，请在计划中配置容量。' : '，等待执行结束后可领取。' }}
+          </p>
+          <div v-if="model.hasRole('PROJECT_MANAGER') && task.status === 'READY' && !task.execution" class="dispatch-form">
+            <label :for="'assignee-' + task.id">任务负责人<select :id="'assignee-' + task.id" v-model="assignees[task.id]" :disabled="!model.canAssign(task)"><option value="" disabled>选择项目成员</option><option v-for="member in state.snapshot.assignees ?? []" :key="member.subjectId" :value="member.subjectId">{{ member.subjectId }} · {{ member.roles.join(' / ') }}</option></select></label>
+            <button class="action-button secondary" type="button" :disabled="!model.canAssign(task) || !assignees[task.id]" @click="model.assign(task.id, assignees[task.id])">分配任务</button>
+          </div>
+          <div v-if="task.owner === state.snapshot.subjectId && task.status === 'READY'" class="dispatch-form">
+            <button class="action-button" type="button" :disabled="!model.canClaim(task)" @click="model.claim(task.id)">领取并创建工作树</button>
+            <p class="muted">{{ task.claimable ? '领取后生成本次执行专属分支和目录。' : '当前不可领取，请核对容量、上游验收与语义版本。' }}</p>
+          </div>
+          <details v-if="task.execution" class="execution-details"><summary>执行信息与 MCP 接续</summary>
+            <dl class="evidence-grid"><dt>执行 ID</dt><dd><code>{{ task.execution.executionId }}</code></dd><dt>任务分支</dt><dd><code>{{ task.execution.branch }}</code></dd><dt>工作树目录</dt><dd><code>{{ task.execution.path }}</code></dd><dt>基线 SHA</dt><dd><code>{{ task.execution.baseCommit }}</code></dd><dt>工作目录</dt><dd><code>{{ task.workingDirectory }}</code></dd><dt>允许路径</dt><dd><code v-for="path in task.allowedPaths" :key="path">{{ path }}</code></dd><dt>禁止路径</dt><dd><code v-for="path in task.forbiddenPaths" :key="path">{{ path }}</code></dd><dt>任务验收命令</dt><dd><code v-for="command in task.acceptanceCommands" :key="command">{{ command }}</code></dd></dl>
+            <p class="muted">在此工作树修改代码；通过 MCP 申请与维护路径租约，再提交实际 SHA。任务凭据由项目经理通过治理 API 带外分发，本页不展示或保存任务令牌。领取不代表已经取得写入租约。</p>
+          </details>
+          <div v-if="model.canDispatch(task)" class="dispatch-form">
+            <label :for="'executor-' + task.id">任务执行器<select :id="'executor-' + task.id" v-model="executorChoices[task.id]"><option value="" disabled>选择已配置执行器</option><option v-for="executor in state.snapshot.executors ?? []" :key="executor.id" :value="executor.id">{{ executor.id }} · {{ executor.kind }}</option></select></label>
+            <button class="action-button" type="button" :disabled="!executorChoices[task.id]" @click="model.dispatchExecutor(task.id, executorChoices[task.id])">启动执行</button>
+          </div>
+          <div v-if="task.executor" class="notice">
+            <p>执行器 {{ task.executor.request.executorId }} · {{ task.executor.state === 'UNKNOWN' ? '结果未知，保留占用并查询原执行' : task.executor.state === 'SUCCEEDED' ? '已提交，等待人工门禁' : task.executor.state === 'FAILED' ? '执行失败，可检查工作树后返工' : task.executor.state === 'STOPPED' ? '已确认停止' : '执行中' }}</p>
+            <p class="muted">最近核对：{{ task.executor.observedAt }} · 运行截止：{{ task.executor.request.deadline }}</p>
+            <p v-for="check in task.executor.result?.checks ?? []" :key="check.id" class="muted">{{ check.id }}：退出码 {{ check.exitCode }}{{ check.timedOut ? ' · 超时' : '' }}{{ check.truncated ? ' · 输出超过限制' : '' }}</p>
+            <button v-if="task.owner === state.snapshot.subjectId" class="action-button secondary" type="button" :disabled="!model.writable()" @click="model.refreshExecutor(task.id)">查询原执行状态</button>
+          </div>
           <p class="gate-summary"><span v-for="gate in gates" :key="gate">{{ task.gates[gate] ? '✓' : '○' }} {{ gateLabels[gate] }}</span></p>
+          <div v-if="model.canTask(task, 'confirm_execution_stopped')" class="gate-form">
+            <p class="muted">此执行仍占用容量。核对进程已退出或远端任务已终止后，填写证据并释放；此操作本身不会停止进程。</p>
+            <label :for="'stop-evidence-' + task.id">停止核对证据<input :id="'stop-evidence-' + task.id" v-model="stopEvidence[task.execution!.executionId]" placeholder="进程退出记录或远端终止记录" /></label>
+            <button class="action-button secondary" type="button" :disabled="!stopEvidence[task.execution!.executionId]?.trim()" @click="model.taskCommand(task.id, 'confirm_execution_stopped', undefined, undefined, stopEvidence[task.execution!.executionId])">确认已停止并释放容量</button>
+          </div>
           <div class="inline-actions"><button v-for="action in [{ id: 'start_review', label: '开始评审' }, { id: 'start_testing', label: '进入测试' }, { id: 'accept_task', label: '验收任务' }, { id: 'retry_task', label: '允许新执行' }, { id: 'revalidate_task', label: '重新绑定语义版本' }].filter(action => model.canTask(task, action.id))" :key="action.id" class="action-button secondary" type="button" @click="model.taskCommand(task.id, action.id)">{{ action.label }}</button></div>
-          <div v-if="gates.some(gate => model.canTask(task, 'record_gate', gate))" class="gate-form"><label :for="'evidence-' + task.id">证据引用<input :id="'evidence-' + task.id" v-model="evidence[task.id]" placeholder="评审记录或测试报告引用" /></label>
-            <div v-for="gate in gates.filter(gate => model.canTask(task, 'record_gate', gate))" :key="gate" class="inline-actions"><strong>{{ gateLabels[gate] }}</strong><button class="action-button secondary" type="button" :disabled="!evidence[task.id]?.trim()" @click="model.taskCommand(task.id, 'record_gate', gate, true, evidence[task.id])">通过</button><button class="action-button danger" type="button" :disabled="!evidence[task.id]?.trim()" @click="model.taskCommand(task.id, 'record_gate', gate, false, evidence[task.id])">拒绝并返工</button></div>
+          <details v-if="Object.keys(task.gateEvidence ?? {}).length"><summary>门禁证据 ID</summary><dl class="evidence-grid"><template v-for="(id, gate) in task.gateEvidence" :key="gate"><dt>{{ gateLabels[gate] ?? gate }}</dt><dd><code>{{ id }}</code></dd></template></dl></details>
+          <div v-if="gates.some(gate => model.canTask(task, 'record_gate', gate))" class="gate-form">
+            <label v-if="!state.snapshot.evidenceRequired || ['CODE_REVIEW', 'BUSINESS_ACCEPTANCE'].some(gate => model.canTask(task, 'record_gate', gate))" :for="'evidence-' + task.id">{{ state.snapshot.evidenceRequired ? '评审／业务验收说明' : '证据引用' }}<input :id="'evidence-' + task.id" v-model="evidence[task.id]" :maxlength="state.snapshot.evidenceRequired ? 16000 : undefined" :placeholder="state.snapshot.evidenceRequired ? '说明本人核对的内容及结论' : '评审记录或测试报告引用'" /></label>
+            <p v-if="state.snapshot.evidenceRequired && ['UNIT_TEST', 'INTEGRATION_TEST'].some(gate => model.canTask(task, 'record_gate', gate))">测试门禁使用上方所选候选的最新平台验证。请先检查验证命令及结果是否覆盖本项测试要求。当前验证：<code>{{ state.detailFresh ? state.detail?.validation?.id ?? '尚未验证' : '尚未选择有效候选' }}</code></p>
+            <div v-for="gate in gates.filter(gate => model.canTask(task, 'record_gate', gate))" :key="gate" class="inline-actions"><strong>{{ gateLabels[gate] }}</strong><button class="action-button secondary" type="button" :disabled="!model.canRecordGate(task, gate, true, evidence[task.id])" @click="model.taskCommand(task.id, 'record_gate', gate, true, evidence[task.id])">{{ task.status === 'ACCEPTED' ? '更新通过证据' : '通过' }}</button><button v-if="task.status !== 'ACCEPTED'" class="action-button danger" type="button" :disabled="!model.canRecordGate(task, gate, false, evidence[task.id])" @click="model.taskCommand(task.id, 'record_gate', gate, false, evidence[task.id])">拒绝并返工</button></div>
           </div>
         </article></div>
       </section>

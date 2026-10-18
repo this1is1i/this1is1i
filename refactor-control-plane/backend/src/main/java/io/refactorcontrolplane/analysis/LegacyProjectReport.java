@@ -11,7 +11,8 @@ public record LegacyProjectReport(
         String currentArchitectureMermaid,
         List<String> risks,
         List<String> upgradePoints,
-        List<AnalysisFinding> findings) {
+        List<AnalysisFinding> findings,
+        List<ArchitectureRelation> relations) {
     public LegacyProjectReport {
         technologyStack = java.util.Collections.unmodifiableSet(new java.util.LinkedHashSet<>(technologyStack));
         modules = List.copyOf(modules);
@@ -19,5 +20,6 @@ public record LegacyProjectReport(
         risks = List.copyOf(risks);
         upgradePoints = List.copyOf(upgradePoints);
         findings = List.copyOf(findings);
+        relations = List.copyOf(relations);
     }
 }

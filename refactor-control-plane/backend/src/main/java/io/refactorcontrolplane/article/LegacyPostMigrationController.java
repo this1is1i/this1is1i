@@ -1,7 +1,7 @@
 package io.refactorcontrolplane.article;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import io.refactorcontrolplane.api.DemoProjectService;
+import io.refactorcontrolplane.project.ProjectSource;
 import io.refactorcontrolplane.governance.LocalIdentityRegistry;
 import io.refactorcontrolplane.governance.ProjectRole;
 import java.time.ZoneId;
@@ -12,12 +12,13 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
+@org.springframework.boot.autoconfigure.condition.ConditionalOnProperty(name="control-plane.project.mode",havingValue="demo",matchIfMissing=true)
 @RequestMapping("/api/v1/article-migration")
 public class LegacyPostMigrationController {
     private final LegacyPostMigrationService migration;
     private final LocalIdentityRegistry identities;
-    private final DemoProjectService project;
-    public LegacyPostMigrationController(LegacyPostMigrationService migration, LocalIdentityRegistry identities, DemoProjectService project) {
+    private final ProjectSource project;
+    public LegacyPostMigrationController(LegacyPostMigrationService migration, LocalIdentityRegistry identities, ProjectSource project) {
         this.migration = migration; this.identities = identities; this.project = project;
     }
 

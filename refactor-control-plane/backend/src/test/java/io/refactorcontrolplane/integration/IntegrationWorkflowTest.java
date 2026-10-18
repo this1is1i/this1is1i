@@ -227,6 +227,21 @@ class IntegrationWorkflowTest {
         submit("B", "src/Client.java", "class Client { static int value() { return Api.value()*2; } }");
         submit("C", "src/Schema.java", "class Schema { static int value() { return 1; } }");
     }
+    @Test void staleUnknownAttemptCanBeReconciledWithoutErasingEvidenceOrPassingGates() throws Exception {
+        happy(); var view=create("candidate"); var candidate=view.candidate(); String id=candidate.plan().id();
+        var result=validate(view,"unknown");
+        store.save(store.get(result.id()),new IntegrationService.Validation(result.id(),id,result.fingerprint(),result.commitSha(),"qa","RUNNING",result.startedAt(),null,List.of(),""));
+        setProfile("changed",candidate.plan().profile().checks());
+        assertFalse(service.get(qa,id).currentlyValid());
+        assertThrows(IllegalStateException.class,service::requireNoUnknownLatestValidation);
+        var request=new IntegrationService.Reconcile("reconcile",candidate.plan().fingerprint(),result.id(),"Process stopped; worktree inspected; no result trusted");
+        assertThrows(SecurityException.class,()->service.reconcileValidation(lead,id,request));
+        var reconciled=service.reconcileValidation(qa,id,request);
+        assertEquals("ABANDONED",reconciled.state()); assertEquals(reconciled,service.reconcileValidation(qa,id,request));
+        assertEquals("RUNNING",store.read(store.get(result.id()),IntegrationService.Validation.class).state());
+        service.requireNoUnknownLatestValidation();
+        assertThrows(IllegalStateException.class,()->service.propose(lead,id,new IntegrationService.Propose("cannot-pass",candidate.plan().fingerprint(),reconciled.id())));
+    }
     IntegrationService.View create(String key) { return service.create(lead, new IntegrationService.Create(key, runtime.contextVersion(), List.of("C", "B", "A"), "java")); }
     IntegrationService.Validation validate(IntegrationService.View view, String key) {
         return service.validate(qa, view.candidate().plan().id(), new IntegrationService.Validate(key, view.candidate().plan().fingerprint()));

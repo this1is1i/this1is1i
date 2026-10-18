@@ -19,8 +19,10 @@ public record GitAnalysisSnapshot(String commit, List<Entry> entries) {
     public record Entry(String path, String blobId, String text, String limitation) {}
 
     public static GitAnalysisSnapshot capture(Path repository) {
-        String commit = utf8(run(repository, new byte[0], 4096, "rev-parse", "--verify", "HEAD^{commit}")).trim();
-        if (!commit.matches("[0-9a-f]{40}|[0-9a-f]{64}")) throw new IllegalStateException("Invalid Git commit identity");
+        return capture(repository, headCommit(repository));
+    }
+    public static GitAnalysisSnapshot capture(Path repository, String commit) {
+        if (commit == null || !commit.matches("[0-9a-f]{40}|[0-9a-f]{64}")) throw new IllegalArgumentException("Full commit required");
         byte[] tree = run(repository, new byte[0], MAX_TOTAL_BYTES, "ls-tree", "-r", "-l", "-z", "--full-tree", commit);
         var blobs = new TreeMap<String, Blob>();
         var skipped = new ArrayList<Entry>();
@@ -79,9 +81,27 @@ public record GitAnalysisSnapshot(String commit, List<Entry> entries) {
     private static boolean excluded(String path) {
         return Arrays.stream(path.split("/")).anyMatch(Set.of("target", "node_modules", ".git", ".m2-repository")::contains);
     }
+    public static String headCommit(Path repository) {
+        String commit = utf8(run(repository, new byte[0], 4096, "rev-parse", "--verify", "HEAD^{commit}")).trim();
+        if (!commit.matches("[0-9a-f]{40}|[0-9a-f]{64}")) throw new IllegalStateException("Invalid Git commit identity");
+        return commit;
+    }
+    public static String localRefCommit(Path repository, String ref) {
+        if (ref == null || !ref.startsWith("refs/heads/")) throw new IllegalArgumentException("Local branch required");
+        return utf8(run(repository, new byte[0], 4096, "rev-parse", "--verify", ref + "^{commit}")).trim();
+    }
+    public static Set<String> directories(Path repository, String commit) {
+        if (commit == null || !commit.matches("[0-9a-f]{40}|[0-9a-f]{64}")) throw new IllegalArgumentException("Full commit required");
+        String tree = utf8(run(repository, new byte[0], MAX_TOTAL_BYTES, "ls-tree", "-d", "-r", "-z", "--full-tree", commit));
+        var paths = new HashSet<String>(); paths.add(".");
+        for (String row : tree.split("\u0000")) {
+            if (!row.isEmpty() && row.startsWith("040000 tree ")) paths.add(row.substring(row.indexOf('\t') + 1));
+        }
+        return Set.copyOf(paths);
+    }
     private static boolean relevant(String path) {
         return path.endsWith("/pom.xml") || path.equals("pom.xml") || path.endsWith("/package.json") || path.equals("package.json")
-                || path.matches(".*\\.(java|jsp|js|ts|vue|py|sql|gradle|kts)$");
+                || path.matches(".*\\.(java|jsp|js|ts|vue|py|sql|gradle|kts|xml|properties|ya?ml)$");
     }
     private record Blob(String id, int size) {}
     private static String utf8(byte[] data) {

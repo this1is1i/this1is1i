@@ -58,6 +58,14 @@ public final class LocalIdentityRegistry {
                 && account.subjectId().equals(subjectId))) throw new SecurityException("Assignee is not a project member");
     }
 
+    public List<Member> projectMembers(String projectId) {
+        return accounts.stream().filter(account -> account.projectId().equals(projectId))
+                .map(account -> new Member(account.subjectId(), account.roles().stream().map(Enum::name).sorted().toList()))
+                .sorted(Comparator.comparing(Member::subjectId)).toList();
+    }
+
+    public record Member(String subjectId, List<String> roles) {}
+
     private static String digest(String token) {
         try { return HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(token.getBytes(StandardCharsets.UTF_8))); }
         catch (java.security.NoSuchAlgorithmException exception) { throw new IllegalStateException(exception); }

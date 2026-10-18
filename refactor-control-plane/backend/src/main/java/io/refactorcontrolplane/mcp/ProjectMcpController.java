@@ -3,7 +3,7 @@ package io.refactorcontrolplane.mcp;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.refactorcontrolplane.api.DemoProjectOverview;
-import io.refactorcontrolplane.api.DemoProjectService;
+import io.refactorcontrolplane.project.ProjectSource;
 import io.refactorcontrolplane.persistence.AuditEventRepository;
 import java.util.List;
 import java.util.Map;
@@ -27,17 +27,18 @@ public class ProjectMcpController {
             "publish_schema_change", "record_architecture_decision", "report_change_event",
             "submit_changeset", "report_blocker");
 
-    private final DemoProjectService projectService;
+    private final ProjectSource projectService;
     private final McpProjectRuntime runtime;
     private final AuditEventRepository auditEvents;
     private final ObjectMapper mapper;
 
     public ProjectMcpController(
-            DemoProjectService projectService, McpProjectRuntime runtime, AuditEventRepository auditEvents,
+            ProjectSource projectService, McpProjectRuntime runtime, AuditEventRepository auditEvents,
             ObjectMapper mapper) {
         this.projectService = projectService;
         this.runtime = runtime;
         this.auditEvents = auditEvents;
+        this.auditEvents.bindScope(projectService.planScope());
         this.mapper = mapper;
     }
 
@@ -114,6 +115,35 @@ public class ProjectMcpController {
         arguments.put("taskToken", runtime.assignmentToken(input.path("taskId").asText()));
         if (!validWriteEnvelope(arguments)) throw new IllegalArgumentException("Command requires idempotencyKey and expectedVersion");
         return execute("operator:" + action, arguments);
+    }
+
+    /** Browser claim shares the MCP journal and locks ownership through execution publication. */
+    public Object executorCommand(io.refactorcontrolplane.governance.LocalIdentityRegistry.Principal principal,
+            String action, JsonNode input) {
+        synchronized (runtime) {
+            if (!principal.projectId().equals(projectService.overview().projectId())) throw new SecurityException("Project membership required");
+            String taskId = input.path("taskId").asText();
+            runtime.requireAssignedSubject(taskId, principal.subjectId());
+            var args = (com.fasterxml.jackson.databind.node.ObjectNode) input.deepCopy();
+            args.put("actorSubject", principal.subjectId()).put("taskToken", runtime.assignmentToken(taskId));
+            if (!validWriteEnvelope(args)) throw new IllegalArgumentException("Executor operation requires a key and version");
+            return executeLocked("executor:" + action, args);
+        }
+    }
+
+    /** Browser claim shares the MCP journal and locks ownership through execution publication. */
+    public Object claimAssignedTask(io.refactorcontrolplane.governance.LocalIdentityRegistry.Principal principal, JsonNode input) {
+        synchronized (runtime) {
+            if (!principal.projectId().equals(projectService.overview().projectId())) throw new SecurityException("Project membership required");
+            var arguments = (com.fasterxml.jackson.databind.node.ObjectNode) input.deepCopy();
+            String taskId = arguments.path("taskId").asText();
+            long assignment = runtime.requireAssignedSubject(taskId, principal.subjectId());
+            arguments.put("taskToken", runtime.assignmentToken(taskId));
+            McpToolSchemas.validateInput("claim_task", arguments, mapper);
+            arguments.put("actorSubject", principal.subjectId());
+            arguments.put("assignmentEpoch", assignment);
+            return executeLocked("claim_task", arguments);
+        }
     }
 
     private Object executeLocked(String name, JsonNode arguments) {

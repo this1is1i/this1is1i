@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from "vue";
 import { fetchProjectOverview, type ProjectOverview } from "./control-plane-api";
-import ArticleWorkspace from "./article/ArticleWorkspace.vue";
+import PlanWorkspace from "./project/PlanWorkspace.vue";
 import IntegrationWorkspace from "./integration/IntegrationWorkspace.vue";
 import {
   getRoleWorkspace,
@@ -73,7 +73,7 @@ onMounted(async () => {
       <header class="topbar">
         <div>
           <div class="eyebrow">项目 / {{ remoteOverview?.projectId ?? '尚未读取' }}</div>
-          <h1>Legacy Blog Modernization</h1>
+          <h1>{{remoteOverview?.projectId??'项目重构工作台'}}</h1>
         </div>
         <div class="topbar-actions">
           <span class="stage-badge">多任务集成 · 人工合并</span>
@@ -93,8 +93,8 @@ onMounted(async () => {
         </div>
       </section>
 
+      <PlanWorkspace />
       <IntegrationWorkspace />
-      <ArticleWorkspace />
     </main>
   </div>
 </template>

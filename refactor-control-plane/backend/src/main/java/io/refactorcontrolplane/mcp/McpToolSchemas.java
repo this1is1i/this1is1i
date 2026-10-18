@@ -90,6 +90,9 @@ public final class McpToolSchemas {
         for (String key : List.of("contextVersion", "contractVersion", "schemaVersion", "adrVersion")) fields.put(key, POSITIVE);
         for (String key : List.of("allowedPaths", "forbiddenPaths", "acceptanceCommands")) fields.put(key, STRINGS);
         fields.put("currentlyValid", BOOL);
+        fields.put("capacityHeld", BOOL);
+        fields.put("capacityBlockers", array(object(Map.of("kind", enumeration("ACTOR", "ENVIRONMENT"), "resourceId", TEXT,
+                "capacity", Map.of("type", "integer", "minimum", 0), "used", Map.of("type", "integer", "minimum", 0)))));
         var required = List.copyOf(fields.keySet());
         fields.put("execution", object(Map.of("taskId", TEXT, "executionId", TEXT, "branch", TEXT, "path", TEXT,
                 "baseCommit", TEXT, "commitSha", nullable(TEXT))));
@@ -110,6 +113,8 @@ public final class McpToolSchemas {
                 "evidence", array(object(Map.of("claim", TEXT, "path", TEXT, "sourceType", TEXT, "id", TEXT,
                         "snapshotCommit", TEXT, "blobId", nullable(TEXT)))),
                 "currentArchitectureMermaid", TEXT, "risks", STRINGS, "upgradePoints", STRINGS,
+                "relations", array(object(Map.of("kind", TEXT, "from", TEXT, "to", TEXT,
+                        "confidence", enumeration("FACT", "INFERENCE", "UNKNOWN"), "explanation", TEXT, "evidenceIds", STRINGS))),
                 "findings", array(object(Map.of("kind", enumeration("FACT", "INFERENCE", "UNKNOWN"),
                         "category", TEXT, "statement", TEXT, "evidenceIds", STRINGS)))));
     }

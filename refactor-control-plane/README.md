@@ -6,13 +6,17 @@
 
 ## 已实现能力
 
+面向非技术评审与赞助沟通，参见[项目介绍与阶段成果（2026-10-11）](docs/project-introduction-for-sponsors.md)，其中区分已实现能力、验证证据及后续交付。
+
 - 从固定 Git tree/blob 读取不可变快照，识别 Maven/npm 声明和源码类型，绑定提交与对象证据，区分事实、推断和未知；识别范围见[分析快照说明](docs/analysis-snapshots.md)。
 - 为文章管理迁移生成 7 个带依赖、资源、允许路径和验收命令的工作包，三个实现任务可并行。
 - 每个执行创建独立 `codex/task-*` branch 与 worktree；重复请求幂等，创建中断后只在分支仍精确指向原始基线时补全元数据，主分支不被推进。
+- 可在批准计划中配置执行者并发容量和环境槽位；容量不足阻断领取，未知执行保留占用，独立项目经理确认停止后释放。配置与边界见[执行调度说明](docs/execution-scheduling.md)。
 - `READ`、`SHARED_WRITE`、`EXCLUSIVE_WRITE` 路径租约，支持 TTL、服务端单调时钟、心跳、版本条件和大小写策略。
 - 追加式 Change Event、API/Schema 变更失效传播、越权路径拒绝与审计。
-- 代码 Review、单元/集成/业务验收四类门禁；全部通过后也只产生人工合并建议。
-- Mock 模型执行器与 OpenAI-compatible 企业 HTTP 网关；审计只保存上下文/输出哈希，不保存密钥或源码正文。
+- 代码 Review、单元/集成/业务验收四类门禁；配置模式采信平台实际验证与独立人工说明，绑定精确执行、提交及不可变证据，验收前重查内容与时效；全部通过后只产生人工合并建议。见[证据门禁说明](docs/evidence-store.md)。
+- Mock 模型网关与 OpenAI-compatible 企业 HTTP 网关处理文本请求；模型审计保存上下文/输出哈希，不保存密钥或源码正文。
+- Mock/HTTP 任务执行器接通真实工作树修改、检查和提交；工作台支持启动与状态查询，结果未知时保留容量、只查询原 ID。配置和协议见[任务执行器](docs/task-executors.md)；[三执行器并发与恢复验收](docs/acceptance/milestone8-execution.md)已通过。
 - Integration AI 冲突报告，包括路径、API Contract、DB Schema、影响任务和建议顺序。
 - MCP Streamable HTTP JSON-RPC 入口，提供规格批准的 15 个工具及具体输入/输出 Schema；写操作强制 task token、幂等键和预期版本，日志写入前校验参数，见[工具契约](docs/contracts/project-mcp.md)。
 - H2 项目级审计/操作日志，使用数据库权威幂等键、单调 journal sequence、请求/结果日志与版本条件推进；重启按执行全序恢复任务、语义版本和未过期租约，并完成可安全重放的 `PENDING` 操作；随机任务令牌不落库。
@@ -53,6 +57,8 @@ Spring Boot Control Plane
 所有运行数据、依赖缓存和样例均位于项目目录；无需修改系统或用户级配置。
 
 ## 首次启动
+
+通用目标仓库可使用[项目级可执行计划](docs/project-plans.md)：配置固定基线及任务，完成架构师和项目经理确认后执行。以下步骤继续保留原文章 demo，不能替代独立样例应用的交付验收。
 
 先初始化固定版本的公开 MIT 样例：
 
@@ -177,10 +183,11 @@ shutdown.exe /a
 ## 目录
 
 ```text
-backend/                 Spring Boot 控制平面、MCP、H2 审计和文章 API
-frontend/                Vue 3 / TypeScript 八角色工作台与文章迁移视图
+backend/                 Spring Boot 控制平面、MCP、H2 审计（demo 保留历史文章 API）
+frontend/                Vue 3 / TypeScript 计划审批与八角色集成工作台
 docs/                    产品规格、架构、OpenAPI、验收标准和证据
 samples/catalog/         固定样例来源、许可证与 SHA
+samples/article-app/     独立 Vue/Spring Boot 文章脚手架与业务库
 samples/workspaces/      本地样例（脚本生成，不提交）
 scripts/                 可复现的项目级初始化脚本
 ```
@@ -202,6 +209,9 @@ scripts/                 可复现的项目级初始化脚本
 - [当前状态](docs/status.md)
 - [多任务集成与本机组合验证](docs/integration-candidates.md)
 - [真实集成工作台操作](docs/integration-workbench.md)
+- [项目计划、修订审批与组合基线](docs/project-plans.md)
+- [独立文章样例启动](samples/article-app/README.md)
+- [文章行为对照与待确认项](docs/article-parity-checklist.md)
 - [新执行者接手入口](AGENTS.md)
 
 ## 许可证

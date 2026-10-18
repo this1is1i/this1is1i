@@ -7,6 +7,7 @@ CREATE TABLE IF NOT EXISTS integration_record (
     payload CLOB NOT NULL,
     revision BIGINT NOT NULL DEFAULT 0
 );
+ALTER TABLE integration_record ADD COLUMN IF NOT EXISTS plan_scope VARCHAR(64) NOT NULL DEFAULT '';
 CREATE TABLE IF NOT EXISTS integration_member (
     candidate_id VARCHAR(36) NOT NULL REFERENCES integration_record(id),
     task_id VARCHAR(100) NOT NULL,

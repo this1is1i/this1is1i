@@ -8,7 +8,8 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 @Service
-public class DemoProjectService {
+@org.springframework.boot.autoconfigure.condition.ConditionalOnProperty(name="control-plane.project.mode", havingValue="demo", matchIfMissing=true)
+public class DemoProjectService implements io.refactorcontrolplane.project.ProjectSource {
 
     private final LegacyProjectReport analysis;
     private final Path repository;

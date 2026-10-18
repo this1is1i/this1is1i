@@ -10,8 +10,12 @@ import org.springframework.stereotype.Component;
 public class IntegrationProfiles {
     private final String file;
     private final ObjectMapper mapper;
-    public IntegrationProfiles(@Value("${control-plane.integration-checks-file:}") String file, ObjectMapper mapper) {
-        this.file = file; this.mapper = mapper;
+    private final io.refactorcontrolplane.project.ProjectSource source;
+    public IntegrationProfiles(String file, ObjectMapper mapper) { this(file, mapper, null); }
+    @org.springframework.beans.factory.annotation.Autowired
+    public IntegrationProfiles(@Value("${control-plane.integration-checks-file:}") String file, ObjectMapper mapper,
+            io.refactorcontrolplane.project.ProjectSource source) {
+        this.file = file; this.mapper = mapper; this.source = source;
     }
     public record Check(String id, List<String> argv, String workingDirectory, int timeoutSeconds) {
         public Check {
@@ -33,11 +37,12 @@ public class IntegrationProfiles {
         }
     }
     public Profile load(String id) {
-        if (file.isBlank()) throw new IllegalStateException("Local validation is disabled; configure a project-owned integration-checks-file");
+        if (file.isBlank() && (source == null || !source.configured())) throw new IllegalStateException("Local validation is disabled; configure a project-owned integration-checks-file");
         return available().stream().filter(profile -> profile.id().equals(id)).findFirst()
                 .orElseThrow(() -> new IllegalArgumentException("Unknown validation profile"));
     }
     public List<Profile> available() {
+        if (source != null && source.configured()) return source.validationProfiles();
         if (file.isBlank()) return List.of();
         try {
             Path path = Path.of(file);

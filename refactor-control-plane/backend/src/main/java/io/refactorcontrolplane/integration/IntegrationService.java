@@ -1,6 +1,6 @@
 package io.refactorcontrolplane.integration;
 
-import io.refactorcontrolplane.api.DemoProjectService;
+import io.refactorcontrolplane.project.ProjectSource;
 import io.refactorcontrolplane.governance.LocalIdentityRegistry.Principal;
 import io.refactorcontrolplane.governance.ProjectRole;
 import io.refactorcontrolplane.mcp.McpProjectRuntime;
@@ -15,6 +15,7 @@ import org.springframework.stereotype.Service;
 @Service
 public class IntegrationService {
     private final McpProjectRuntime runtime;
+    private final ProjectSource source;
     private final IntegrationStore store;
     private final IntegrationProfiles profiles;
     private final IntegrationGit git;
@@ -22,9 +23,11 @@ public class IntegrationService {
     private final String repository;
     private final String targetRef;
 
-    public IntegrationService(DemoProjectService project, McpProjectRuntime runtime, IntegrationStore store,
+    public IntegrationService(ProjectSource project, McpProjectRuntime runtime, IntegrationStore store,
             IntegrationProfiles profiles, @Value("${control-plane.integration-target:refs/heads/main}") String targetRef) {
-        this.runtime = runtime; this.store = store; this.profiles = profiles; this.targetRef = targetRef;
+        this.source = project;
+        store.bindScope(project.planScope());
+        this.runtime = runtime; this.store = store; this.profiles = profiles; this.targetRef = project.targetRef(targetRef);
         this.projectId = project.overview().projectId(); this.repository = project.repository().toAbsolutePath().normalize().toString();
         this.git = new IntegrationGit(project.repository());
         runtime.integrationMergeGuard(task -> {
@@ -34,6 +37,7 @@ public class IntegrationService {
 
     public record Create(String idempotencyKey, long expectedVersion, List<String> taskIds, String profileId) {}
     public record Validate(String idempotencyKey, String expectedFingerprint) {}
+    public record Reconcile(String idempotencyKey,String expectedFingerprint,String validationId,String reason) {}
     public record Propose(String idempotencyKey, String expectedFingerprint, String validationId) {}
     public record Plan(String id, String createdAt, String fingerprint, String repository, String targetRef,
             String targetCommit, List<McpProjectRuntime.IntegrationInput> inputs, IntegrationProfiles.Profile profile,
@@ -49,6 +53,27 @@ public class IntegrationService {
     public record View(Candidate candidate, String effectiveState, boolean currentlyValid, String invalidReason, Validation validation) {}
 
     public List<String> list(Principal principal) { authorize(principal, null); return store.candidates(); }
+    /** All lifecycle changes use the same lock order as create/propose: integration then runtime. */
+    public synchronized <T> T withPlanLock(java.util.function.Supplier<T> action) {
+        synchronized (runtime) { return action.get(); }
+    }
+    public void requireNoUnknownLatestValidation() {
+        for (String id:store.currentCandidates()) {
+            Candidate candidate=candidate(id);
+            if (candidate.latestValidation()!=null && store.read(store.get(candidate.latestValidation()),Validation.class).state().equals("RUNNING"))
+                throw new IllegalStateException("Latest validation is unknown; inspect its worktree and run a fresh attempt before switching plans");
+        }
+    }
+    public synchronized void requireBaselineCandidate(String id, String commit, String target) {
+        Candidate candidate = candidate(id); requireCurrent(candidate);
+        if (!candidate.state().equals("READY") || candidate.latestValidation() == null
+                || !candidate.assembly().commit().equals(commit) || !candidate.plan().targetCommit().equals(target))
+            throw new IllegalStateException("Baseline must be the current validated candidate commit");
+        Validation validation = store.read(store.get(candidate.latestValidation()), Validation.class);
+        if (!validation.state().equals("PASSED") || !validation.fingerprint().equals(candidate.plan().fingerprint())
+                || !validation.commitSha().equals(commit)) throw new IllegalStateException("Latest combined validation must pass");
+        runtime.requireIntegrationAccepted(taskIds(candidate));
+    }
     public View get(Principal principal, String id) {
         authorize(principal, null); Candidate candidate = candidate(id);
         String invalid = invalidReason(candidate);
@@ -71,6 +96,7 @@ public class IntegrationService {
                 if (request.expectedVersion() != runtime.contextVersion()) throw new IllegalStateException("Context version changed");
                 var inputs = runtime.integrationInputs(request.taskIds()); independent(actor, inputs);
                 var profile = profiles.load(request.profileId());
+                source.requireValidationProfile(request.taskIds(), profile);
                 String target = git.target(targetRef);
                 String fingerprint = fingerprint(repository, targetRef, target, inputs, profile);
                 var report = new IntegrationConflictAnalyzer(io.refactorcontrolplane.ownership.RepositoryPathPolicy.caseInsensitive())
@@ -115,7 +141,11 @@ public class IntegrationService {
         String validationId = UUID.randomUUID().toString(), start = Instant.now().toString();
         Validation running = new Validation(validationId, id, candidate.plan().fingerprint(), candidate.assembly().commit(),
                 actor.subjectId(), "RUNNING", start, null, List.of(), "");
-        var attempt = store.beginValidation(store.get(id), candidate, running, request.idempotencyKey(), actor.subjectId(), List.of(id, request));
+        IntegrationStore.Entry attempt;
+        synchronized (runtime) {
+            expected(candidate,request.expectedFingerprint());
+            attempt = store.beginValidation(store.get(id), candidate, running, request.idempotencyKey(), actor.subjectId(), List.of(id, request));
+        }
         var results = new ArrayList<CheckResult>();
         String detail = ""; boolean passed = true;
         try {
@@ -136,7 +166,7 @@ public class IntegrationService {
         } catch (RuntimeException | java.io.IOException ex) { passed = false; detail = ex.getMessage(); }
         Validation completed = new Validation(validationId, id, running.fingerprint(), running.commitSha(), actor.subjectId(),
                 passed ? "PASSED" : "FAILED", start, Instant.now().toString(), List.copyOf(results), detail);
-        store.save(attempt, completed);
+        synchronized (runtime) { store.save(attempt, completed); }
         return completed;
     }
 
@@ -165,6 +195,29 @@ public class IntegrationService {
         }
     }
 
+    /** Records a human disposition; never reruns an unknown attempt or turns it into passing evidence. */
+    public synchronized Validation reconcileValidation(Principal actor,String id,Reconcile request) {
+        authorize(actor,ProjectRole.QA_LEAD); key(request.idempotencyKey());
+        synchronized(runtime) {
+            source.requireExecutable();
+            Candidate candidate=candidate(id); independent(actor,candidate.plan().inputs());
+            if (!store.currentCandidates().contains(id) || !candidate.plan().fingerprint().equals(request.expectedFingerprint()))
+                throw new IllegalStateException("Candidate scope or fingerprint changed");
+            if (request.reason()==null || request.reason().isBlank() || request.reason().length()>2000)
+                throw new IllegalArgumentException("Supply a reconciliation reason of 1 to 2000 characters");
+            var previous=store.byKey(request.idempotencyKey());
+            if(previous.isPresent()) { replay(previous.get(),actor,List.of(id,request),"validation"); return store.read(previous.get(),Validation.class); }
+            if(!Objects.equals(candidate.latestValidation(),request.validationId())) throw new IllegalStateException("Latest validation changed");
+            Validation unknown=store.read(store.get(request.validationId()),Validation.class);
+            if(!unknown.state().equals("RUNNING")) throw new IllegalStateException("Only an unknown validation can be reconciled");
+            Validation disposition=new Validation(UUID.randomUUID().toString(),id,unknown.fingerprint(),unknown.commitSha(),actor.subjectId(),
+                    "ABANDONED",unknown.startedAt(),Instant.now().toString(),List.of(),"Reconciles unknown attempt "+unknown.id()+": "+request.reason());
+            // Retain the original RUNNING row and atomically link the new disposition as latest.
+            store.beginValidation(store.get(id),candidate,disposition,request.idempotencyKey(),actor.subjectId(),List.of(id,request));
+            return disposition;
+        }
+    }
+
     private Candidate candidate(String id) {
         var entry = store.get(id);
         if (!entry.kind().equals("candidate")) throw new IllegalArgumentException("Not a candidate ID");
@@ -175,6 +228,7 @@ public class IntegrationService {
         try {
             if (!candidate.plan().repository().equals(repository) || !candidate.plan().targetRef().equals(targetRef)) return "Project repository or target changed";
             var inputs = runtime.integrationInputs(taskIds(candidate));
+            source.requireValidationProfile(taskIds(candidate), profiles.load(candidate.plan().profile().id()));
             String current = fingerprint(repository, targetRef, git.target(targetRef), inputs, profiles.load(candidate.plan().profile().id()));
             if (!current.equals(candidate.plan().fingerprint())) return "Submitted commits, semantic versions, target or validation configuration changed";
             if (candidate.state().equals("READY") && !git.target(IntegrationGit.branch(candidate.plan().id())).equals(candidate.assembly().commit()))
@@ -191,8 +245,12 @@ public class IntegrationService {
         requireCurrent(candidate);
     }
     private String fingerprint(String repo, String ref, String target, Object inputs, Object profile) {
+        return fingerprint(source,store,repo,ref,target,inputs,profile);
+    }
+    static String fingerprint(ProjectSource source,IntegrationStore store,String repo,String ref,String target,Object inputs,Object profile) {
         try { return HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256")
-                .digest(store.json(List.of(repo, ref, target, inputs, profile)).getBytes(StandardCharsets.UTF_8))); }
+                .digest(store.json(source.configured() ? List.of(repo, ref, target, inputs, profile, source.planScope())
+                        : List.of(repo, ref, target, inputs, profile)).getBytes(StandardCharsets.UTF_8))); }
         catch (java.security.NoSuchAlgorithmException ex) { throw new IllegalStateException(ex); }
     }
     private void authorize(Principal actor, ProjectRole role) {

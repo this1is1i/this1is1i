@@ -17,6 +17,7 @@ frontend/.npm-cache/
 # Runtime data and task worktrees
 .runtime/
 .worktrees/
+__pycache__/
 
 # Imported sample repositories keep their own Git metadata locally.
 samples/workspaces/

@@ -38,15 +38,16 @@ mvn.cmd --% -Dspring-boot.run.arguments=--control-plane.identity-file=../.runtim
 | 命令 | 服务端角色 | 额外参数 / 前置条件 |
 | --- | --- | --- |
 | `assign_task` | PROJECT_MANAGER | `assignee`；返回任务令牌，仅交给执行者。已有执行不能换人，同一人可重新领取凭据 |
+| `confirm_execution_stopped` | PROJECT_MANAGER | 独立于任务负责人；`taskExecutionId` 精确匹配，`evidenceRef` 非空；CLAIMED/RUNNING/BLOCKED/STALE/CANCELLED 可确认，前两者转 BLOCKED，撤销旧凭据并释放占用；操作本身不停止进程 |
 | `start_review` | ENGINEERING_LEAD | `commitSha`；任务已 SUBMITTED |
-| `record_gate` | 对应门禁审批角色 | `commitSha`、`gate`、布尔 `passed`、非空 `evidenceRef` |
+| `record_gate` | 对应门禁审批角色 | `commitSha`、`gate`、布尔 `passed`；配置模式还须精确 `taskExecutionId` 及人工 `statement` / 平台 `candidateId`、`validationId`，或本人有效证据 ID；demo 兼容非空 `evidenceRef` |
 | `start_testing` | QA_LEAD | `commitSha`；CODE_REVIEW 已通过 |
 | `accept_task` | BUSINESS_APPROVER | `commitSha`；四类门禁全部通过 |
 | `merge_proposal` | ENGINEERING_LEAD | `commitSha`；已验收且当前有效，仅生成人工合并建议 |
 | `revalidate_task` | ARCHITECT | 语义失效或旧执行未验证；生成当前语义版本的新任务包 |
 | `retry_task` | PROJECT_MANAGER | 当前有效且 BLOCKED / REJECTED；允许新的执行尝试 |
 
-门禁对应角色：CODE_REVIEW → ENGINEERING_LEAD；UNIT_TEST / INTEGRATION_TEST → QA_LEAD；BUSINESS_ACCEPTANCE → BUSINESS_APPROVER。拥有审批角色的执行者也不能批准自己的任务。门禁失败使任务进入 REJECTED 并释放租约，项目经理可通过 retry_task 发起返工。证据引用是人工提供的追溯入口，本轮没有自动执行 CI 或验证外部证据内容。
+门禁对应角色：CODE_REVIEW → ENGINEERING_LEAD；UNIT_TEST / INTEGRATION_TEST → QA_LEAD；BUSINESS_ACCEPTANCE → BUSINESS_APPROVER。拥有审批角色的执行者也不能批准自己的任务。门禁失败使任务进入 REJECTED 并释放租约，项目经理可通过 retry_task 发起返工。配置模式按已选 A 使用平台实际验证和人工说明，验收/人工建议前重新核验不可变内容与当前资格；完整字段、续签与历史兼容见[证据门禁](evidence-store.md)。
 
 分配示例：
 
@@ -64,6 +65,8 @@ mvn.cmd --% -Dspring-boot.run.arguments=--control-plane.identity-file=../.runtim
 语义发布按依赖图传播失效，已 ACCEPTED 的历史状态保留，但 `currentlyValid=false`，旧门禁和合并资格立即撤销。重新验证或重试会撤销旧任务令牌；下一次领取使用新 branch/worktree，旧目录保留供人工检查，不自动删除或覆盖。
 
 任务令牌不写入审计日志，重启后全部失效。项目经理可以用新的幂等键对同一 assignee 再次 `assign_task` 取得当前令牌。READY 阶段仍兼容预留路径；claim 切换到真实执行时释放这批临时预留，执行者需在新执行中重新申请租约。终态或失效任务不能申请或续期租约。
+
+计划配置 `scheduling` 后，容量不足会阻止创建工作树；重试、重新绑定语义版本和切换计划不能丢弃仍占用容量的执行，需先核对停止。完整格式和人工核对边界见[执行容量说明](execution-scheduling.md)。
 
 ## 日志恢复与升级边界
 

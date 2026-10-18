@@ -15,6 +15,26 @@ class IntegrationGitRecoveryTest {
         IntegrationWorkflowTest.git(repo, "init", "-b", "main");
         return repo;
     }
+    @Test void validationWorktreeCanReadLongLegacyPathsInItsIndependentObjectRepository() throws Exception {
+        Path repo = repo();
+        String relative = "src/MaskFormatAnnotationFormatterFactory.java";
+        Path validationRoot = directory.resolve(".refactor-integrations").resolve(UUID.randomUUID().toString())
+                .resolve("validation-" + UUID.randomUUID());
+        while (validationRoot.resolve(relative).toString().length() <= 260) relative = "configuration/" + relative;
+        Path file = repo.resolve(relative);
+        Files.createDirectories(file.getParent());
+        Files.writeString(file, "legacy source\n", StandardCharsets.UTF_8);
+        IntegrationWorkflowTest.commit(repo);
+        String commit = IntegrationWorkflowTest.git(repo, "rev-parse", "HEAD");
+        var git = new IntegrationGit(repo);
+        var plan = new IntegrationService.Plan(UUID.randomUUID().toString(), "now", "long-path", repo.toString(),
+                "refs/heads/main", commit, java.util.List.of(), null, null);
+        Path tree = git.validationTree(plan, commit, UUID.randomUUID().toString());
+        assertTrue(tree.resolve(relative).toString().length() > 260);
+        assertEquals("legacy source\n", Files.readString(tree.resolve(relative), StandardCharsets.UTF_8));
+        assertTrue(git.clean(tree, commit));
+        assertEquals(commit, IntegrationWorkflowTest.git(repo, "rev-parse", "main"));
+    }
     @Test void interruptionBeforePublishingOwnedDirectoryCanRetry() throws Exception {
         Path repo = repo(); String id = UUID.randomUUID().toString();
         var interrupted = new IntegrationGit(repo) {

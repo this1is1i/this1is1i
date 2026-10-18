@@ -113,7 +113,7 @@ class IntegrationGit {
     }
     private ControlledProcess.Result run(Path cwd, byte[] input, int limit, String... args) {
         var command = new ArrayList<>(List.of("git", "--no-replace-objects", "--no-lazy-fetch", "-c", "core.hooksPath=" + root.resolve("disabled-hooks"),
-                "-c", "commit.gpgsign=false", "-c", "core.autocrlf=false", "-C", cwd.toString()));
+                "-c", "commit.gpgsign=false", "-c", "core.autocrlf=false", "-c", "core.longpaths=true", "-C", cwd.toString()));
         command.addAll(List.of(args));
         return ControlledProcess.run(cwd, command, Map.of(
                 "GIT_CONFIG_NOSYSTEM", "1", "GIT_CONFIG_GLOBAL", System.getProperty("os.name").startsWith("Windows") ? "NUL" : "/dev/null",
