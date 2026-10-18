@@ -1,0 +1,57 @@
+{
+  "scope": "10B1 owned article behavior and soft deletion; independent legacy migration and governed acceptance remain pending",
+  "serverVersion": "D:\\Database\\MySQL\\MySQL Server 8.0\\bin\\mysqld.exe  Ver 8.0.31 for Win64 on x86_64 (MySQL Community Server - GPL)",
+  "sourceCommit": "5e62608af333b5757bf767e05b19e2b0d56f0afb",
+  "sourceSqlSha256": "74c5104833cfcddbc61b1a28a5049e4b4f615c607f3a491f239bda9b9a586307",
+  "sourceRows": 7,
+  "tests": [
+    {
+      "class": "ArticleApiContractTest",
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "class": "ArticleDatabaseContractTest",
+      "tests": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "class": "MySqlEngineContractTest",
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "class": "ArticleBehaviorContractTest",
+      "tests": 7,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "class": "ArticleSessionContractTest",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "class": "ArticleLoginContractTest",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    }
+  ],
+  "jvmZone": "Pacific/Auckland",
+  "governanceDatabaseTouched": false,
+  "fixtureState": "STOPPED",
+  "actualMysqlTestCount": 20,
+  "mysqlLogs": ".runtime/phase10b1-mysql-accepted/maven.log",
+  "separateH2SchemaGuardTests": 1
+}

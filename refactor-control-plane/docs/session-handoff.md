@@ -4,7 +4,7 @@
 
 ## 从哪里继续
 
-第 7、8、9 里程碑和 10A MySQL 存储基线已完成。下一阶段为 **10B 文章行为与独立迁移工具**；不要重做已验收阶段，也不要将完整第 10 里程碑或 MVP 标记为完成。
+第 7、8、9 里程碑和 10A MySQL 存储基线已完成。10B1 文章行为也已完成；下一阶段为 **10B2 独立迁移工具**；不要重做已验收阶段，也不要将完整第 10 里程碑或 MVP 标记为完成。
 
 先读本项目 `AGENTS.md`、[当前状态](status.md)、[开发计划](development-plan.md)，再按需读[执行证据](execution-evidence.md)、[9B 验收](acceptance/milestone9b-execution.md)、[证据门禁](evidence-store.md)和[执行器协议](task-executors.md)。旧阶段记录属于历史证据，以最新状态为准。
 
@@ -16,7 +16,7 @@
 
 用户要求加快进度、避免过度冗余测试。按实际改动做最小必要的失败反例和定向回归；通过后不无故重复。只修改项目级配置，不修改全局环境或工具设置。平台只能生成人工合并建议，不能自动合并 main。
 
-2026-10-18 追加批准：保留 MySQL；按博客归属隔离（所属用户管理、匿名只读已发布）；保存原 HTML 但白名单展示；旧 URL 稳定且改标题不变；可编辑标题/正文/状态但归属和 URL 不变。删除的软删除/仅归档问题仅收到编辑问题回复，删除选择仍待答，不能把默认选项当成批准。完整选项见[决定记录](article-business-decisions.md)。
+2026-10-18 追加批准：保留 MySQL；按博客归属隔离（所属用户管理、匿名只读已发布）；保存原 HTML 但白名单展示；旧 URL 稳定且改标题不变；可编辑标题/正文/状态但归属和 URL 不变。用户随后明确选择软删除，已在 10B1 实现；不重复询问。完整选项见[决定记录](article-business-decisions.md)。
 
 ## 9A 已交付与关键边界
 
@@ -53,7 +53,7 @@
 
 9C 已交付：[导出协议](audit-export.md) 和 [验收/真实样本](acceptance/milestone9c-audit.md)。实现入口为 `AuditExportService`、`AuditExportController`、`runtime.auditSnapshot()` 和工作台 `exportAudit()`。需求映射是批准计划内声明，历史语义绑定明确未独立重验；不得把导出摘要视为签名、HTTP 回报视为平台证明或历史审批视为当前资格。
 
-10A 入口为样例 `application-mysql.properties`、`schema-mysql.sql`、显式 UTC/微秒 JDBC 和 `scripts/mysql_sample.py`。最终 MySQL 十项、H2 七项与 Python 六项通过，样例打包成功；命令、日志及独立证据见[10A 验收](acceptance/milestone10a-mysql.md)。运行实例已正常关闭，不能复用已有 datadir 或碰系统服务。10B 从已批准决定实现业务与独立迁移工具，再由 10C 接平台候选闭环；不得重复询问已批准五项决定。
+10A 入口为样例 `application-mysql.properties`、`schema-mysql.sql`、显式 UTC/微秒 JDBC 和 `scripts/mysql_sample.py`。最终 MySQL 十项、H2 七项与 Python 六项通过，样例打包成功；命令、日志及独立证据见[10A 验收](acceptance/milestone10a-mysql.md)。运行实例已正常关闭，不能复用已有 datadir 或碰系统服务。10B1 已完成归属/账号会话/CSRF、HTML 清洗、稳定精确 URL、版本编辑与软删除。真实 MySQL 20 项、H2 17 项、前端 16 项、Python 11 项通过，构建成功；见 [10B1 验收](acceptance/milestone10b1-article-behavior.md)。实例 `.runtime/phase10b1-mysql-accepted` 已 STOPPED。10B2 接续独立迁移，必须显式来源时区、目标状态和旧博客到新账号映射；文章/映射/成功审计同事务，编辑或软删除目标不可被重试覆盖/复活。七行来源未迁移，原旧格式路径测试只是明确夹具。10C 再做受管候选闭环；已批准决定不重复询问。
 
 ## 工作区与运行注意事项
 
@@ -64,4 +64,4 @@
 
 新会话可直接使用：
 
-> 请阅读 refactor-control-plane/AGENTS.md 和 docs/session-handoff.md，从 10B 继续。10A 的真实 MySQL 存储基线已完成，沿用 docs/article-business-decisions.md 的已批准决定，删除语义仍待答。保留用户改动，避免冗余测试；当前仓库/main 的成果保存已经授权，不重复询问。
+> 请阅读 refactor-control-plane/AGENTS.md 和 docs/session-handoff.md，从 10B2 独立迁移工具继续。10A 与 10B1 已完成，沿用 docs/article-business-decisions.md 的全部已批准决定（包括软删除）。保留用户改动，避免冗余测试；当前仓库/main 的成果保存已经授权，不重复询问。

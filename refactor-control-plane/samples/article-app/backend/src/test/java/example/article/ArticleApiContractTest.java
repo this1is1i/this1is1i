@@ -17,6 +17,7 @@ import org.springframework.test.web.servlet.MockMvc;
 @SpringBootTest
 @AutoConfigureMockMvc
 class ArticleApiContractTest {
+    @org.junit.jupiter.api.BeforeEach void ownership() { OwnedArticleFixture.seed(jdbc); }
     @org.springframework.test.context.DynamicPropertySource
     static void database(org.springframework.test.context.DynamicPropertyRegistry registry) throws Exception { ArticleDatabaseContractTest.database(registry); }
 
@@ -31,45 +32,45 @@ class ArticleApiContractTest {
 
     @Test
     void createsAndReadsAnArticleThroughTheVersionedRestContract() throws Exception {
-        String location = mvc.perform(post("/api/articles")
+        String location = mvc.perform(post("/api/manage/articles").with(org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user("tester")).with(org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
-                                {"title":"Migration proof","content":"Vue 3 + Spring Boot","status":"DRAFT"}
+                                {"menuId":201,"title":"Migration proof","content":"Vue 3 + Spring Boot","status":"DRAFT"}
                                 """))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.id").isNumber())
                 .andExpect(jsonPath("$.title").value("Migration proof"))
                 .andReturn().getResponse().getHeader("Location");
 
-        mvc.perform(get("/api/articles"))
+        mvc.perform(get("/api/manage/articles").with(org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user("tester")))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[?(@.title == 'Migration proof')]").exists());
 
-        mvc.perform(put(location)
+        mvc.perform(put(location).with(org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user("tester")).with(org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
-                                {"title":"Migration verified","content":"persisted","status":"PUBLISHED"}
+                                {"expectedVersion":1,"title":"Migration verified","content":"persisted","status":"PUBLISHED"}
                                 """))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("PUBLISHED"));
 
-        mvc.perform(delete(location)).andExpect(status().isNoContent());
-        mvc.perform(get(location)).andExpect(status().isNotFound());
+        mvc.perform(delete(location+"?expectedVersion=2").with(org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user("tester")).with(org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf())).andExpect(status().isNoContent());
+        mvc.perform(get(location).with(org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user("tester"))).andExpect(status().isNotFound());
     }
 
     @Test
     void preservesLegacyLengthTitlesAndRejectsLongerOnes() throws Exception {
-        mvc.perform(post("/api/articles").contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"title\":\"" + "文".repeat(255) + "\",\"content\":\"legacy\",\"status\":\"DRAFT\"}"))
+        mvc.perform(post("/api/manage/articles").with(org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user("tester")).with(org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf()).contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"menuId\":201,\"title\":\"" + "文".repeat(255) + "\",\"content\":\"legacy\",\"status\":\"DRAFT\"}"))
                 .andExpect(status().isCreated());
-        mvc.perform(post("/api/articles").contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"title\":\"" + "文".repeat(256) + "\",\"content\":\"legacy\",\"status\":\"DRAFT\"}"))
+        mvc.perform(post("/api/manage/articles").with(org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user("tester")).with(org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf()).contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"menuId\":201,\"title\":\"" + "文".repeat(256) + "\",\"content\":\"legacy\",\"status\":\"DRAFT\"}"))
                 .andExpect(status().isBadRequest());
     }
 
     @Test
     void rejectsArticleWithoutARequiredTitle() throws Exception {
-        mvc.perform(post("/api/articles")
+        mvc.perform(post("/api/manage/articles").with(org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user("tester")).with(org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"content\":\"missing title\",\"status\":\"DRAFT\"}"))
                 .andExpect(status().isBadRequest());

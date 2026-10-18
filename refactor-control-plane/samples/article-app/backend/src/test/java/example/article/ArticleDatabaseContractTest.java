@@ -16,6 +16,7 @@ import org.springframework.test.context.DynamicPropertySource;
 @SpringBootTest
 class ArticleDatabaseContractTest {
     @Autowired ArticleService articles;
+    @org.junit.jupiter.api.BeforeEach void ownership() { OwnedArticleFixture.seed(jdbc); }
     @Autowired JdbcTemplate jdbc;
     @DynamicPropertySource static void database(DynamicPropertyRegistry registry) throws Exception {
         String file=System.getProperty("article.mysql.config");
@@ -25,23 +26,23 @@ class ArticleDatabaseContractTest {
         }
     }
     @Test void creationResponseExactlyMatchesTheStoredMicrosecondInstant() {
-        var created=articles.create(new ArticleCommand("precision","body",ArticleStatus.DRAFT));
-        assertEquals(created.updatedAt(),articles.find(created.id()).updatedAt());
+        var created=articles.create("tester",OwnedArticleFixture.command("precision","body",ArticleStatus.DRAFT));
+        assertEquals(created.updatedAt(),articles.find("tester",created.id()).updatedAt());
         assertEquals(0,created.updatedAt().getNano()%1000,"Storage and API promise microsecond precision");
     }
     @Test void roundTripsUnicodeAndHtmlLargerThanMysqlTextWithoutTruncation() {
         String content="<p>中文🙂</p>".repeat(8000);
-        var created=articles.create(new ArticleCommand("标题🙂",content,ArticleStatus.DRAFT));
-        assertEquals(content,articles.find(created.id()).content());
+        var created=articles.create("tester",OwnedArticleFixture.command("标题🙂",content,ArticleStatus.DRAFT));
+        assertEquals(content,articles.find("tester",created.id()).content());
     }
     @Test void storesDatesBeyond2038AsUtcRegardlessOfTheJvmDefaultZone() {
         Instant future=Instant.parse("2070-04-03T02:01:00.123456Z");
-        var created=articles.create(new ArticleCommand("future","body",ArticleStatus.DRAFT));
+        var created=articles.create("tester",OwnedArticleFixture.command("future","body",ArticleStatus.DRAFT));
         jdbc.update(connection->{
             var statement=connection.prepareStatement("UPDATE modern_articles SET updated_at=? WHERE id=?");
             statement.setTimestamp(1,Timestamp.from(future),Calendar.getInstance(TimeZone.getTimeZone("UTC")));
             statement.setLong(2,created.id());return statement;
         });
-        assertEquals(future,articles.find(created.id()).updatedAt());
+        assertEquals(future,articles.find("tester",created.id()).updatedAt());
     }
 }

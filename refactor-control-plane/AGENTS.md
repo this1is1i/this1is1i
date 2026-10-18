@@ -4,7 +4,7 @@
 
 ## 当前接续点（2026-10-18）
 
-第 7、8、9 里程碑及 10A 独立 MySQL 存储基线已完成，下一阶段是 10B 文章行为与独立迁移工具；完整第 10 里程碑和 MVP 尚未完成。新会话先读 [开发交接](docs/session-handoff.md)、[当前状态](docs/status.md)及[业务决定](docs/article-business-decisions.md)。用户已明确批准保留 MySQL、按博客归属隔离、原 HTML 白名单展示、稳定旧 URL，以及可改标题/正文/状态但 URL/归属不变，不重复询问。删除语义仍待答，不能把预选项当批准。10A 新鲜结果为真实 MySQL 10 项、H2 7 项（重叠不累加）、Python 6 项及样例打包通过；只补后续受影响检查。
+第 7、8、9 里程碑、10A 独立 MySQL 存储基线及 10B1 文章行为已完成，下一阶段是 10B2 独立迁移工具；完整第 10 里程碑和 MVP 尚未完成。新会话先读 [开发交接](docs/session-handoff.md)、[当前状态](docs/status.md)及[业务决定](docs/article-business-decisions.md)。用户已明确批准保留 MySQL、按博客归属隔离、原 HTML 白名单展示、稳定旧 URL，以及可改标题/正文/状态但 URL/归属不变，不重复询问。用户现已明确批准软删除，不重复询问。10B1 真实 MySQL 20 项、H2 17 项（重叠不累加）、前端 16 项、Python 11 项及构建通过，详见 docs/acceptance/milestone10b1-article-behavior.md。旧格式路径夹具不等于七行旧数据已迁移；10B2 必须保留映射并拒绝覆盖已编辑/软删除目标。只补后续受影响检查。
 
 此前第六期至 9A 的成果保存提交为 `ed298f1`，9B 为 `2b8c34c`。用户于 2026-10-18 明确批准推送到 `https://github.com/this1is1i/this1is1i.git` 的 `main`；两项成果及其前置提交均已推送，远端 SHA 已与本地核对一致。后续先读取真实 Git 状态，不重复询问同一仓库/main 的已授权保存操作。保留父工作区无关改动，禁止清理或重置用户工作。
 
@@ -91,7 +91,7 @@
 - `docs/analysis-snapshots.md`：分析证据语义、识别范围与资源边界。
 - `docs/article-migration.md`：本地文章数据迁移、对照与真实旧库验收边界。
 - `docs/article-parity-checklist.md`：固定对象的文章权限、富文本、路由、关联和时间行为；第 10 里程碑待确认事项。
-- `docs/article-business-decisions.md`、`docs/acceptance/milestone10a-mysql.md`：第 10 里程碑已批准决定与 10A 实际引擎验收；10B/10C 仍待实现，不能把旧 CRUD 脚手架当作权限/迁移/页面等价证明。
+- `docs/article-business-decisions.md`、`docs/acceptance/milestone10a-mysql.md`：第 10 里程碑已批准决定与 10A 实际引擎验收；10B1 文章行为已通过，10B2/10C 仍待实现；见 `docs/acceptance/milestone10b1-article-behavior.md`，不能以独立业务测试替代迁移或受管候选验收。
 - `docs/contracts/project-mcp.md`：MCP 参数、响应及兼容策略。
 - `docs/integration-candidates.md`：真实 Git 组合、冲突返工、本机验证、指纹失效与人工建议 API。
 - `docs/integration-workbench.md`：真实状态工作台、身份权限、组合操作及不确定结果处理。

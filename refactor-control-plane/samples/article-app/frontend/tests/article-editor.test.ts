@@ -1,18 +1,23 @@
 import { expect, it } from "vitest";
+import { createArticleEditor } from "../src/article/editor";
 
 async function factory() {
-  const module = await import(/* @vite-ignore */ new URL("../src/article/editor.ts", import.meta.url).href).catch(() => ({}));
-  expect(module).toHaveProperty("createArticleEditor");
-  return (module as any).createArticleEditor;
+  return (fetcher: any) => createArticleEditor(((url: string, init?: RequestInit) => {
+    if (url === "/api/session") return Promise.resolve(json({ authenticated: true, subject: "tester", csrfToken: "csrf", csrfHeader: "X-CSRF-TOKEN" }));
+    if (url === "/api/manage/menus") return Promise.resolve(json([{ id: 201, blogUrl: "test-blog", menuName: "articles" }]));
+    if (url === "/api/articles") return Promise.resolve(json([]));
+    return fetcher(url, init);
+  }) as typeof fetch);
 }
-const article = (id = 1, title = "original") => ({ id, title, content: "body", status: "DRAFT" });
+const article = (id = 1, title = "original") => ({ id, title, content: "body", status: "DRAFT", menuId: 201, version: 1, publicPath: `/test-blog/articles/a${id}` });
 const json = (value: unknown, status = 200) => new Response(JSON.stringify(value), { status });
 const deferred = () => { let resolve!: (r: Response) => void; const promise = new Promise<Response>(r => resolve = r); return { promise, resolve }; };
 
 it("keeps the newest list when older requests arrive late", async () => {
   const create = await factory(), old = deferred(); let reads = 0;
-  const model = create(async () => ++reads === 1 ? old.promise : json([article(2)]));
-  const first = model.load(); await model.load(); old.resolve(json([article(1)])); await first;
+  let started!: () => void; const ready = new Promise<void>(done => started = done);
+  const model = create(async () => { if (++reads === 1) { started(); return old.promise; } return json([article(2)]); });
+  const first = model.load(); await ready; await model.load(); old.resolve(json([article(1)])); await first;
   expect(model.state.articles[0].id).toBe(2);
 });
 
@@ -44,7 +49,7 @@ it("edits made during creation continue updating the created ID instead of posti
   const saving = model.save(); model.state.editor.content = "continued typing";
   pending.resolve(json(article(42), 201)); await saving;
   expect(model.state.editor.content).toBe("continued typing"); expect(model.state.editingId).toBe(42);
-  await model.save(); expect(writes).toEqual([{ url: "/api/articles", method: "POST" }, { url: "/api/articles/42", method: "PUT" }]);
+  await model.save(); expect(writes).toEqual([{ url: "/api/manage/articles", method: "POST" }, { url: "/api/manage/articles/42", method: "PUT" }]);
 });
 
 it("unknown write outcomes keep the draft and require refresh plus explicit acknowledgement", async () => {
@@ -83,11 +88,13 @@ it("a completed write with failed reload is reported as saved and cannot be dupl
 
 it("a stale read cannot resurrect a deleted article", async () => {
   const create = await factory(), old = deferred(); let reads = 0;
+  let started!: () => void; const ready = new Promise<void>(done => started = done);
   const model = create(async (_: string, init?: RequestInit) => {
     if (init?.method === "DELETE") return new Response(null, { status: 204 });
-    return ++reads === 2 ? old.promise : json(reads <= 3 ? [article()] : []);
+    if (++reads === 2) { started(); return old.promise; }
+    return json(reads <= 3 ? [article()] : []);
   });
-  await model.load(); const refresh = model.load();
+  await model.load(); const refresh = model.load(); await ready;
   // A pending read is intentionally insufficient authorization for a destructive write.
   await model.remove(article()); expect(model.state.busy).toBe(false);
   await model.load(); await model.remove(article()); old.resolve(json([article()])); await refresh;

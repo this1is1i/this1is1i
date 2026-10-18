@@ -181,7 +181,7 @@ def verify(fixture):
     if not report_directory.is_dir():
         raise RuntimeError('No fresh reports were produced by this fixture run')
     reports = []
-    for name in ['ArticleApiContractTest', 'ArticleDatabaseContractTest', 'MySqlEngineContractTest']:
+    for name in ['ArticleApiContractTest', 'ArticleDatabaseContractTest', 'MySqlEngineContractTest', 'ArticleBehaviorContractTest', 'ArticleSessionContractTest', 'ArticleLoginContractTest']:
         report=report_directory/('TEST-example.article.'+name+'.xml')
         if not report.is_file():
             raise RuntimeError('A required fresh report is missing')
@@ -191,7 +191,7 @@ def verify(fixture):
         if row['tests']<1 or row['failures'] or row['errors'] or row['skipped'] or properties.get('article.mysql.config')!=str(fixture.path/'application.properties'):
             raise RuntimeError('MySQL acceptance did not pass every required test')
         reports.append(row)
-    result = {'scope': '10A independent MySQL storage foundation; not full article parity acceptance', 'serverVersion': fixture.manifest['serverVersion'], 'sourceCommit': PIN,
+    result = {'scope': '10B1 owned article behavior and soft deletion; independent legacy migration and governed acceptance remain pending', 'serverVersion': fixture.manifest['serverVersion'], 'sourceCommit': PIN,
               'sourceSqlSha256': fixture.manifest['sourceSqlSha256'], 'sourceRows': fixture.manifest['sourceRows'], 'tests': reports, 'jvmZone': 'Pacific/Auckland', 'governanceDatabaseTouched': False}
     (fixture.path / 'evidence.json').write_text(json.dumps(result, indent=2) + '\n', encoding='utf-8')
     return result

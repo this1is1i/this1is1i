@@ -4,7 +4,7 @@ import ArticleWorkspace from "./article/ArticleWorkspace.vue";
 <template>
   <main class="sample-shell">
     <header><p>独立样例应用</p><h1>文章管理</h1>
-      <p>这是文章切片脚手架，使用独立业务数据库。旧权限、富文本和路由的完整对照在业务验收阶段确认。</p></header>
+      <p>独立业务数据库；按博客归属管理文章，保留稳定地址与原始正文。</p></header>
     <ArticleWorkspace />
   </main>
 </template>

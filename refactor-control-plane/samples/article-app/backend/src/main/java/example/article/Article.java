@@ -7,5 +7,5 @@ public record Article(
         String title,
         String content,
         ArticleStatus status,
-        Instant updatedAt) {
+        Instant updatedAt, long menuId, long version, String publicPath) {
 }

@@ -5,7 +5,7 @@
 - 后端：Java 21，`backend/pom.xml`，默认 `127.0.0.1:8081`。
 - 前端：Node 22，`frontend/package-lock.json`，开发端口 `127.0.0.1:5174`，代理到样例 8081。
 - 业务库：以样例后端为工作目录运行时使用 `backend/data/articles`。不能指向平台治理库。
-- 用户已选择保留 MySQL；10A 新库 DDL、真实引擎存储和时间精度基线已验证，见平台 `docs/acceptance/milestone10a-mysql.md`。H2 仍是开发夹具。权限、富文本、稳定 URL 及独立迁移工具仍待 10B，当前 CRUD 脚手架不代表业务等价或可公开部署。
+- 用户已选择保留 MySQL。10A 存储基线及 10B1 博客归属隔离、HTML 清洗、稳定精确 URL、版本编辑和软删除已验证，见平台 `docs/acceptance/milestone10b1-article-behavior.md`。H2 仍是开发夹具，独立旧库迁移和受管验收尚未完成。
 
 在平台根目录，已有项目离线依赖时运行：
 
@@ -18,7 +18,7 @@ python -X utf8 scripts/article_sample.py verify --app samples/article-app
 启动后端（工作目录为 `backend`）：
 
 ```powershell
-java -jar target/article-sample-0.1.0-SNAPSHOT.jar
+java -jar target/article-sample-0.1.0-SNAPSHOT.jar --article.accounts-file=<项目内账号文件的绝对路径>
 ```
 
 启动前端（另一个终端，工作目录为 `frontend`）：
@@ -26,5 +26,34 @@ java -jar target/article-sample-0.1.0-SNAPSHOT.jar
 ```powershell
 npm.cmd run dev
 ```
+
+没有默认管理账号。不指定账号文件时只提供匿名阅读；账号文件是 UTF-8 JSON 数组，每项仅允许 `subject`（字母/数字/下划线/连字符，最多 100）和 `passwordHash`（`{bcrypt}` 前缀的完整 bcrypt 散列）。在项目忽略的 `.runtime` 中保存实际文件；不要提交密码、账号配置或数据库凭据，不复用旧博客密码。散列由本地可信密码工具生成，例如以下结构中的占位符必须替换为完整散列：
+
+```json
+[{"subject":"author-local","passwordHash":"{bcrypt}<完整 bcrypt 散列>"}]
+```
+
+新目标库先由操作者明确配置博客到新账号的归属和菜单，不自动把所有文章分配给第一个账号。下面仅是新库的初始化例子，使用已在账号文件中配置的主体；已有同名记录会拒绝，不覆盖：
+
+```sql
+INSERT INTO article_blogs(owner_subject,blog_url) VALUES ('author-local','author-blog');
+INSERT INTO article_menus(blog_id,menu_name)
+SELECT id,'Anasayfa' FROM article_blogs WHERE blog_url='author-blog';
+```
+
+MySQL 8.0 目标采用 `schema-mysql.sql`，显式使用 `mysql` profile 和项目内连接配置，沿用 `application-mysql.properties` 要求的 URL/凭据。三个路径字段需要 `utf8mb4_0900_bin` 的精确且 NO PAD 比较。旧无归属 schema 会拒绝启动；保留原库，在新目标中显式迁移，不能删库或猜测所有者。H2 开发夹具为支持 255 个 Unicode 码点使用更宽的物理标题列，业务上限仍由服务端统一检查。
+
+| 接口 | 行为 |
+|---|---|
+| `GET /api/session` | 当前会话、`csrfToken` 与 `csrfHeader`；不缓存 |
+| `POST /api/session/login`、`/logout` | 同源会话；登录使用表单 `username/password`，两者都要求 CSRF，完成后重新读取会话令牌 |
+| `GET /api/manage/menus`、`/articles`、`/articles/{id}` | 登录主体自己的菜单与未删除文章，管理响应含原文及版本 |
+| `POST /api/manage/articles` | `title/content/status/menuId`；所属菜单必须属于当前主体 |
+| `PUT /api/manage/articles/{id}` | `title/content/status/expectedVersion`；可带原 `menuId`，不可改归属或 URL |
+| `DELETE /api/manage/articles/{id}?expectedVersion=N` | 软删除，不清理原文、菜单或 URL；过期版本 409 |
+| `GET /api/articles`、`/api/articles/{id}` | 匿名已发布且未删除的安全投影，只含清洗后的 `html`，无原始 `content` |
+| `GET /{blog}/{menu}/{slug}`、`/api/public/{blog}/{menu}/{slug}` | 相同精确旧格式路径的安全投影；Vue 开发服务器的旧路径页面由 `/api/public` 代理读取 |
+
+页面在 `127.0.0.1:5174` 提供登录/管理/公开阅读。编辑正文保留原 HTML，只有服务端清洗结果可进入阅读区。未知写入需要刷新核对，不自动重发；软删除隐藏文章并保留记录。本地回环运行是当前边界；本批未做公网部署或浏览器端到端验收。
 
 受管仓库流程见平台 `docs/project-plans.md`。初始化只从固定的本地旧仓库读取对象，保留其 MIT LICENSE；脚手架由任务执行者放入 `modern/article-app`，经平台组合验证、人工验收，再形成后续计划基线。

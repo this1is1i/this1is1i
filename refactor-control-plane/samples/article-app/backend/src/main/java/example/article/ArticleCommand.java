@@ -2,10 +2,11 @@ package example.article;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Size;
 
 public record ArticleCommand(
-        @NotBlank @Size(max = 255) String title,
+        @NotBlank String title,
         @NotBlank String content,
-        @NotNull ArticleStatus status) {
+        @NotNull ArticleStatus status,
+        @jakarta.validation.constraints.Positive Long menuId,
+        @jakarta.validation.constraints.Positive Long expectedVersion) {
 }
