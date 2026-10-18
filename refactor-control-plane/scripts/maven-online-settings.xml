@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Explicit project-only dependency acquisition; normal verification stays offline. -->
+<settings xmlns="http://maven.apache.org/SETTINGS/1.2.0">
+  <offline>false</offline>
+  <mirrors><mirror><id>huaweicloud</id><mirrorOf>central</mirrorOf>
+    <url>https://mirrors.huaweicloud.com/repository/maven/</url>
+  </mirror></mirrors>
+</settings>

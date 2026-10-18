@@ -4,7 +4,7 @@
 
 ## 从哪里继续
 
-第 7、8、9 里程碑均已完成（9A–9C）。下一阶段是 **第 10 里程碑文章行为与数据升级**，数据库策略及业务差异须由用户决定。不要重做已验收阶段，也不要将完整 MVP 标记为完成。
+第 7、8、9 里程碑和 10A MySQL 存储基线已完成。下一阶段为 **10B 文章行为与独立迁移工具**；不要重做已验收阶段，也不要将完整第 10 里程碑或 MVP 标记为完成。
 
 先读本项目 `AGENTS.md`、[当前状态](status.md)、[开发计划](development-plan.md)，再按需读[执行证据](execution-evidence.md)、[9B 验收](acceptance/milestone9b-execution.md)、[证据门禁](evidence-store.md)和[执行器协议](task-executors.md)。旧阶段记录属于历史证据，以最新状态为准。
 
@@ -15,6 +15,8 @@
 - 第 9A：测试门禁只采信平台实际执行的验证；代码评审与业务验收由对应独立人工角色提交说明。无需再次询问 A/B，不加入外部 CI 签发者和验签范围。
 
 用户要求加快进度、避免过度冗余测试。按实际改动做最小必要的失败反例和定向回归；通过后不无故重复。只修改项目级配置，不修改全局环境或工具设置。平台只能生成人工合并建议，不能自动合并 main。
+
+2026-10-18 追加批准：保留 MySQL；按博客归属隔离（所属用户管理、匿名只读已发布）；保存原 HTML 但白名单展示；旧 URL 稳定且改标题不变；可编辑标题/正文/状态但归属和 URL 不变。删除的软删除/仅归档问题仅收到编辑问题回复，删除选择仍待答，不能把默认选项当成批准。完整选项见[决定记录](article-business-decisions.md)。
 
 ## 9A 已交付与关键边界
 
@@ -51,7 +53,7 @@
 
 9C 已交付：[导出协议](audit-export.md) 和 [验收/真实样本](acceptance/milestone9c-audit.md)。实现入口为 `AuditExportService`、`AuditExportController`、`runtime.auditSnapshot()` 和工作台 `exportAudit()`。需求映射是批准计划内声明，历史语义绑定明确未独立重验；不得把导出摘要视为签名、HTTP 回报视为平台证明或历史审批视为当前资格。
 
-第 10 里程碑的数据库升级策略尚待用户选择：A 保留 MySQL，减少同时迁库风险，适合当前框架升级；B 迁到明确的新引擎，增加数据/SQL/切换恢复范围，适合确有换库目标。推荐 A 尚不是批准。富文本、旧 URL、权限等业务差异按 `docs/article-parity-checklist.md` 确认；先让用户决定，再实施依赖这些决定的代码，不安装数据库或修改全局设置。
+10A 入口为样例 `application-mysql.properties`、`schema-mysql.sql`、显式 UTC/微秒 JDBC 和 `scripts/mysql_sample.py`。最终 MySQL 十项、H2 七项与 Python 六项通过，样例打包成功；命令、日志及独立证据见[10A 验收](acceptance/milestone10a-mysql.md)。运行实例已正常关闭，不能复用已有 datadir 或碰系统服务。10B 从已批准决定实现业务与独立迁移工具，再由 10C 接平台候选闭环；不得重复询问已批准五项决定。
 
 ## 工作区与运行注意事项
 
@@ -62,4 +64,4 @@
 
 新会话可直接使用：
 
-> 请阅读 refactor-control-plane/AGENTS.md 和 docs/session-handoff.md，推进第 10 里程碑；第 9 里程碑已完成，先确认数据库升级策略和文章业务差异。沿用三项 A 决策，保留用户改动，避免冗余测试。用户已明确批准当前仓库/main 的成果保存，不重复询问相同授权。
+> 请阅读 refactor-control-plane/AGENTS.md 和 docs/session-handoff.md，从 10B 继续。10A 的真实 MySQL 存储基线已完成，沿用 docs/article-business-decisions.md 的已批准决定，删除语义仍待答。保留用户改动，避免冗余测试；当前仓库/main 的成果保存已经授权，不重复询问。

@@ -1,0 +1,48 @@
+{
+  "scope": "10A independent MySQL storage foundation; not full article parity acceptance",
+  "serverVersion": "MySQL 8.0.31",
+  "sourceCommit": "5e62608af333b5757bf767e05b19e2b0d56f0afb",
+  "sourceSqlSha256": "74c5104833cfcddbc61b1a28a5049e4b4f615c607f3a491f239bda9b9a586307",
+  "sourceRows": 7,
+  "tests": [
+    {
+      "class": "ArticleApiContractTest",
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "class": "ArticleDatabaseContractTest",
+      "tests": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "class": "MySqlEngineContractTest",
+      "tests": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    }
+  ],
+  "jvmZone": "Pacific/Auckland",
+  "governanceDatabaseTouched": false,
+  "date": "2026-10-18",
+  "connectorJ": "9.2.0",
+  "springBoot": "3.5.0",
+  "fixtureId": "fe26bb22-4b06-47be-8a75-6b7da08e2780",
+  "fixtureState": "STOPPED",
+  "h2RegressionTests": 7,
+  "pythonBoundaryTests": 6,
+  "frontendChanged": false,
+  "fullMilestone10Complete": false,
+  "artifactSha256": {
+    "samples/article-app/backend/src/main/resources/schema-mysql.sql": "337f67ec7c0f526eb79eb4b7b5488f972c5eccc3afbbfdc6e3d826d91a6b7c1f",
+    "samples/article-app/backend/src/main/java/example/article/ArticleService.java": "788d8f99e011e5c0fa579ec35ecc050cbf298fe3ef6acfd410de2b10c8408dc8"
+  },
+  "artifactHashCanonicalization": "UTF8_LF",
+  "pythonSamplePlanRegressionTests": 5,
+  "pythonTests": 11
+}

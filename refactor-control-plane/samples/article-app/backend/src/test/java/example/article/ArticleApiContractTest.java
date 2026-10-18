@@ -17,9 +17,17 @@ import org.springframework.test.web.servlet.MockMvc;
 @SpringBootTest
 @AutoConfigureMockMvc
 class ArticleApiContractTest {
+    @org.springframework.test.context.DynamicPropertySource
+    static void database(org.springframework.test.context.DynamicPropertyRegistry registry) throws Exception { ArticleDatabaseContractTest.database(registry); }
 
     @Autowired
     private MockMvc mvc;
+    @Autowired private org.springframework.jdbc.core.JdbcTemplate jdbc;
+    @Test void usesTheExplicitlyRequestedDatabaseForTheRestContract() throws Exception {
+        try(var connection=jdbc.getDataSource().getConnection()) {
+            org.junit.jupiter.api.Assertions.assertEquals(System.getProperty("article.mysql.config")==null?"H2":"MySQL",connection.getMetaData().getDatabaseProductName());
+        }
+    }
 
     @Test
     void createsAndReadsAnArticleThroughTheVersionedRestContract() throws Exception {

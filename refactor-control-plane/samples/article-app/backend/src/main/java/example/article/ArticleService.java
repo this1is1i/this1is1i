@@ -19,7 +19,7 @@ public class ArticleService {
     }
 
     public Article create(ArticleCommand command) {
-        var updatedAt = clock.instant();
+        var updatedAt = clock.instant().truncatedTo(java.time.temporal.ChronoUnit.MICROS);
         var keyHolder = new GeneratedKeyHolder();
         jdbc.update(connection -> {
             PreparedStatement statement = connection.prepareStatement("""
@@ -29,7 +29,7 @@ public class ArticleService {
             statement.setString(1, command.title());
             statement.setString(2, command.content());
             statement.setString(3, command.status().name());
-            statement.setTimestamp(4, Timestamp.from(updatedAt));
+            statement.setTimestamp(4, Timestamp.from(updatedAt), utc());
             return statement;
         }, keyHolder);
         Number key = keyHolder.getKey();
@@ -54,13 +54,17 @@ public class ArticleService {
 
     public Article update(long id, ArticleCommand command) {
         find(id);
-        var updatedAt = clock.instant();
-        jdbc.update("""
+        var updatedAt = clock.instant().truncatedTo(java.time.temporal.ChronoUnit.MICROS);
+        jdbc.update(connection -> {
+            var statement = connection.prepareStatement("""
                 UPDATE modern_articles
                    SET title = ?, content = ?, status = ?, updated_at = ?
                  WHERE id = ?
-                """, command.title(), command.content(), command.status().name(),
-                Timestamp.from(updatedAt), id);
+                """);
+            statement.setString(1, command.title()); statement.setString(2, command.content());
+            statement.setString(3, command.status().name()); statement.setTimestamp(4, Timestamp.from(updatedAt), utc());
+            statement.setLong(5, id); return statement;
+        });
         return new Article(id, command.title(), command.content(), command.status(), updatedAt);
     }
 
@@ -76,6 +80,7 @@ public class ArticleService {
                 row.getString("title"),
                 row.getString("content"),
                 ArticleStatus.valueOf(row.getString("status")),
-                row.getTimestamp("updated_at").toInstant());
+                row.getTimestamp("updated_at", utc()).toInstant());
     }
+    private static java.util.Calendar utc() { return java.util.Calendar.getInstance(java.util.TimeZone.getTimeZone("UTC")); }
 }

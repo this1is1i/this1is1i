@@ -109,7 +109,7 @@ def prepare(destination):
         'plan': {'baseCommit': PIN, 'targetArchitectureMermaid': 'flowchart LR\n Platform -->|acceptance evidence| SampleAPI\n SampleUI --> SampleAPI\n SampleAPI --> BusinessDB\n Platform --> GovernanceDB',
                  'workPackages': [task], 'criticalPath': ['SCAFFOLD'], 'parallelExecutionGroups': {},
                  'apiContract': 'Article CRUD scaffold; old routes and authorization require milestone 10 parity approval',
-                 'databaseCompatibility': 'Isolated H2 development fixture only; production database strategy remains undecided',
+                 'databaseCompatibility': 'MySQL strategy approved; scaffold checks use isolated H2, while MySQL storage has separate 10A evidence; governed business migration acceptance remains in 10B/10C',
                  'functionalParity': {'legacy': 'Preserve source and behavior checklist; scaffold is not parity acceptance'},
                  'requiredEvidence': ['independent backend tests', 'independent Vue tests and build', 'human review']},
         'resources': {'modern': {'kind': 'PATH', 'locator': 'modern', 'version': '1'}},

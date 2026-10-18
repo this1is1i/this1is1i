@@ -1,11 +1,11 @@
 # 独立文章样例
 
-此目录是可复制到受管任务工作树的脚手架。后端只依赖 Spring Boot/JDBC/H2，前端只依赖 Vue；不依赖平台运行时、身份库或治理数据库。
+此目录是可复制到受管任务工作树的独立样例。后端依赖 Spring Boot/JDBC，支持 H2 开发夹具和显式 MySQL profile，前端依赖 Vue；不依赖平台运行时、身份库或治理数据库。
 
 - 后端：Java 21，`backend/pom.xml`，默认 `127.0.0.1:8081`。
 - 前端：Node 22，`frontend/package-lock.json`，开发端口 `127.0.0.1:5174`，代理到样例 8081。
 - 业务库：以样例后端为工作目录运行时使用 `backend/data/articles`。不能指向平台治理库。
-- 当前是 CRUD 脚手架；H2 是开发夹具，尚未选择生产数据库升级策略。旧权限、富文本、URL 和关联行为参见平台 `docs/article-parity-checklist.md`，不代表业务验收通过。
+- 用户已选择保留 MySQL；10A 新库 DDL、真实引擎存储和时间精度基线已验证，见平台 `docs/acceptance/milestone10a-mysql.md`。H2 仍是开发夹具。权限、富文本、稳定 URL 及独立迁移工具仍待 10B，当前 CRUD 脚手架不代表业务等价或可公开部署。
 
 在平台根目录，已有项目离线依赖时运行：
 
