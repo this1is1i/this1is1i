@@ -1,10 +1,10 @@
 # 新会话开发交接
 
-更新时间：2026-10-18。项目目录：`D:/AAWorkSpeace/this1is1i/refactor-control-plane`。
+更新时间：2026-10-19。项目目录：`D:/AAWorkSpeace/this1is1i/refactor-control-plane`。
 
 ## 从哪里继续
 
-第 7–10 里程碑均已完成，下一阶段为 **第 11 里程碑整体 MVP 发布复验**。第十里程碑证据见[验收](acceptance/milestone10-article.md)，不得重做 10B2/10C，也不能将完整 MVP 提前标记为完成。
+第 7–11 里程碑已完成，**v0.1 单项目、单节点 MVP 验收通过**。先读[最终发布验收](acceptance/milestone11-release.md)、[版本化证据](acceptance/milestone11-evidence.json)及[演示手册](release-demo.md)，不要重做已完成阶段。后续真实试点/生产身份、多节点或客户库切换需用户确定目标，不从“继续”推导无限扩展博客或企业部署。
 
 先读本项目 `AGENTS.md`、[当前状态](status.md)、[开发计划](development-plan.md)，再按需读[执行证据](execution-evidence.md)、[9B 验收](acceptance/milestone9b-execution.md)、[证据门禁](evidence-store.md)和[执行器协议](task-executors.md)。旧阶段记录属于历史证据，以最新状态为准。
 
@@ -39,13 +39,21 @@
 | 工作台 | `frontend/src/integration/workbench.ts`、`IntegrationWorkspace.vue` |
 | 9A 核心回归 | `backend/src/test/java/io/refactorcontrolplane/api/GateEvidenceApiContractTest.java`、`backend/src/test/java/io/refactorcontrolplane/governance/EvidenceStoreContractTest.java` |
 
-## 最近验证结果
+## 最近验证结果（第 11 里程碑）
+
+2026-10-19 平台后端完整 **202 项 / 40 类**、前端 **37 项**、Python 最终 **20 项**及构建通过；受管文章候选实际 MySQL **21 项**、另 H2 **6 项**、Vue **16 项**及构建通过。12 项基线均有本轮精确测试方法/报告摘要映射，不与旧阶段数量累加。浏览器已实际操作双审批、分配/领取、真实提交、候选/验证、四项门禁、业务验收、人工建议、审计下载和独立文章功能；八角色页面另有自动化覆盖。
+
+本轮候选 `246a5e89-8fa5-4be7-8cfb-0c8b9bb7c25b`、提交 `638c8073a0508d7938548c693146fac64949b3fd`、验证 `ec9d32c9-6b72-40bb-b483-24808569696f`。浏览器下载审计原件可复算摘要；测试身份不代表生产签署。平台/文章/MySQL 实际夹具均正常关闭，样例 main 保持固定旧提交。脚本入口为 `scripts/release_preview.py`；未知 MySQL 关闭结果保留 UNCONFIRMED/null 并停止，不能强杀 launcher 后冒充数据库退出。
+
+原始日志在忽略目录 `.runtime/phase11-full`、`.runtime/phase11-browser`；新克隆只包含版本化摘要、审计原件和截图。后续改动仅补受影响检查，无需因读文档重复全量测试。
+
+## 以前阶段的验证记录
 
 9C 最新逐类结果共 **19 项后端、22 项前端**通过，后端 `verify`、前端类型/生产构建成功。覆盖审计鉴权、scope、历史精确执行、模型声明、平台门禁、旧证据失效、只读、真实阻塞验证并发及容量；日志与逐类计数见 [9C 验收](acceptance/milestone9c-audit.md)。9B 的 32 项及两个语义重验证场景属于上一阶段，不与本期重叠计数累加；旧证据包继续保留。
 
 反例日志：`.runtime/phase9a-execution-red.log`（旧执行 ID 审批原先错误放行）、`.runtime/phase9a-recovery-red.log`（PENDING 合并建议恢复原先绕过集成守卫）。两者已修复并纳入最终通过结果；独立复核无剩余阻塞。
 
-未做新一轮浏览器端到端验收，未重跑文章或执行器全量测试。运行时重建不是断电或多节点耐久性认证。`.runtime` 为本地忽略目录，日志存在于当前工作区，不能假设新克隆中也存在。新会话读取文档无需重跑上述全部测试；后续改变相关实现时再选受影响检查。
+以上为第 9 里程碑历史记录；第 11 里程碑已补齐浏览器、文章及执行器全量复验。运行时重建不是断电或多节点耐久性认证。
 
 ## 下一阶段范围与入口
 
@@ -53,7 +61,7 @@
 
 9C 已交付：[导出协议](audit-export.md) 和 [验收/真实样本](acceptance/milestone9c-audit.md)。实现入口为 `AuditExportService`、`AuditExportController`、`runtime.auditSnapshot()` 和工作台 `exportAudit()`。需求映射是批准计划内声明，历史语义绑定明确未独立重验；不得把导出摘要视为签名、HTTP 回报视为平台证明或历史审批视为当前资格。
 
-第十里程碑现已完成：独立迁移入口 `LegacyArticleMigration` / `ArticleMigrationCommand`，`java -jar ... --migration preview|apply`，配置与边界见[迁移说明](article-migration.md)。平台复现入口 `scripts/verify_milestone10.py governed`；必须新建项目内夹具目录，不能重用已存在数据目录。最终候选真实 MySQL21项、另H2六项、Vue16项、Python13项及构建通过；七行的两个博客/三个关联、原文/旧新ID/旧路径/原时间→UTC已对照。平台/MySQL正常关闭，受管样例main未变；候选、最新验证、测试角色门禁与可复算审计见[最终验收](acceptance/milestone10-article.md)。测试身份不代表生产人工签署。下一步第11里程碑，不重复询问已批准决定。
+第十里程碑独立迁移入口为 `LegacyArticleMigration` / `ArticleMigrationCommand`，`java -jar ... --migration preview|apply`，配置与边界见[迁移说明](article-migration.md)。CLI 复现入口 `scripts/verify_milestone10.py governed`；必须新建项目内夹具目录，不能重用已存在数据目录。第 11 里程碑浏览器复现入口另见最新验收，不重复询问已批准决定。
 
 ## 工作区与运行注意事项
 
@@ -64,4 +72,4 @@
 
 新会话可直接使用：
 
-> 请阅读 refactor-control-plane/AGENTS.md 和 docs/session-handoff.md，从第 11 里程碑完整发布验收继续。第 7–10 里程碑已完成，沿用 docs/article-business-decisions.md 的全部已批准决定（包括软删除）。保留用户改动，避免冗余测试；当前仓库/main 的成果保存已经授权，不重复询问。
+> 请阅读 refactor-control-plane/AGENTS.md、docs/session-handoff.md 和 docs/acceptance/milestone11-release.md。第 7–11 里程碑及单节点 v0.1 MVP 已验收通过，不重复实施；后续先明确真实试点目标，沿用全部已批准业务决定。保留用户改动，避免冗余测试；当前仓库/main 的成果保存已经授权，不重复询问。

@@ -2,7 +2,9 @@
 
 本文件是新聊天和新执行者的首要接手入口。
 
-## 当前接续点（2026-10-18）
+## 当前接续点（2026-10-19）
+
+第 11 里程碑已完成，v0.1 单项目、单节点 MVP 验收通过。最新依据为 docs/acceptance/milestone11-release.md、milestone11-evidence.json 和 docs/release-demo.md。本轮平台后端202项/40类、前端37项、Python最终20项、实际候选MySQL21项（另H2六项）及Vue16项通过；真实角色浏览器流程、下载审计复算、全部实际夹具正常关闭和受管main不变均已核对。下段是上一阶段交接历史，不得据此重做第11里程碑。下一阶段需用户明确试点/生产化目标，不擅自扩大范围或重复全部验收。
 
 第 7–10 里程碑已完成；10B2 独立迁移与 10C 受管验收见 docs/acceptance/milestone10-article.md。下一阶段为第 11 里程碑整体 MVP 发布复验，完整 MVP 尚未完成。新会话先读 [开发交接](docs/session-handoff.md)、[当前状态](docs/status.md)及[业务决定](docs/article-business-decisions.md)。用户已明确批准保留 MySQL、按博客归属隔离、原 HTML 白名单展示、稳定旧 URL，以及可改标题/正文/状态但 URL/归属不变，不重复询问。用户现已明确批准软删除，不重复询问。10B1 真实 MySQL 20 项、H2 17 项（重叠不累加）、前端 16 项、Python 11 项及构建通过，详见 docs/acceptance/milestone10b1-article-behavior.md。10B2/10C 最新候选验证真实 MySQL 21 项、另 6 项 H2、前端 16 项、Python 13 项通过；七行旧数据已对照，映射/原时间与已编辑/软删除保护已验收。候选 5da8f5ef-2979-4eb8-85a7-15cc7e0ba24c 的验证和审计均可复算，测试主体不冒充生产人工签署。只补后续受影响检查。
 
@@ -74,8 +76,11 @@
 - 审计导出使用不清理租约的纯快照及只读一致性事务；历史人工操作从当条投影关联执行/门禁，不能拿最终状态补历史。候选及验证按精确 scope/kind 读取，模型请求必须属于导出计划；当前模型引用只从当前任务 execution ID 判定。历史绑定的部分匹配不可升级成完整语义验证或当前合并资格，原始嵌套投影字段不直接导出。
 - MySQL 源/目标身份以同连接服务器 UUID、DATABASE() 和服务端大小写规则判断，禁止依赖 JDBC catalog 或原始 URL；必须用 databaseTerm=SCHEMA 别名反例验证独立 schema 与相同 schema 的判断。
 - MySQL 验收只用新建项目 datadir/独立进程，关闭前核对 datadir/端口；运行根和构建输出的解析路径都须在项目内。REST 测试必须断言实际引擎，报告按本轮独立目录、配置绑定、非零执行/零跳过采信，禁止把旧绿报告或 H2 测试当成新的 MySQL 证据。失败先检查实例实际状态，不复用现有数据目录或操作系统服务。
+- MySQL 夹具 SQL 身份或关闭无法核实时，保留 UNCONFIRMED 和文件、停止并核查实际进程，禁止自动重试或报告已关闭。Windows launcher 与真正 server 可有不同 PID；仅结束 Popen launcher 不证明数据库停止。发布脚本必须用正常关闭结果或显式未知状态生成证据，不能以启动函数尚未返回资源推导停止成功。
 
 ## 权威文档
+
+- `docs/acceptance/milestone11-release.md`、`milestone11-evidence.json` 和 `docs/release-demo.md`：完整 v0.1 最新验收、版本化原件/截图和复现；历史文档的“待第11里程碑”不再是当前待办。
 
 - `docs/product-spec-v0.1.md`：已批准产品规格，修改需用户确认并升版。
 - `docs/architecture/core-architecture.md`：并发执行与共享上下文设计。

@@ -19,6 +19,7 @@
 
     <properties>
         <java.version>21</java.version>
+        <control-plane.test.reports>${project.build.directory}/surefire-reports</control-plane.test.reports>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
     </properties>
@@ -54,6 +55,11 @@
 
     <build>
         <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <configuration><reportsDirectory>${control-plane.test.reports}</reportsDirectory></configuration>
+            </plugin>
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>

@@ -1,0 +1,1011 @@
+{
+  "schemaVersion": "milestone11-release-evidence-v1",
+  "verifiedDate": "2026-10-19",
+  "sourceCommitBeforeReleasePackaging": "4457f5e1386d9c6e4314afc1ceac0d2d9aa0548e",
+  "scope": "v0.1 single-project, single-node MVP release verification; fixture identities do not attest production human approval",
+  "backend": {
+    "total": 202,
+    "suites": [
+      {
+        "class": "io.refactorcontrolplane.analysis.AnalysisTrustContractTest",
+        "timestamp": null,
+        "reportSha256": "2527b70fa96a9b8bba19da09ad7cf191e5c990cdfec619c5ec8eb2ad4104fb3a",
+        "tests": 18,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "assertions": [
+          "emptyNpmVersionRangeRemainsAValidDeclaration",
+          "analysisIgnoresDirtyStagedDeletedAndUntrackedFiles",
+          "linkedWorktreesAreValidAnalysisInputs",
+          "jsonTrailingTokensAndDuplicateKeysAreRejectedBeforePublishingFacts",
+          "malformedNpmVersionIsNotReportedAsADependencyFact",
+          "xmlCommentsAndDependencyManagementAreNotActiveDependencies",
+          "readsLargeUtf8BlobsAndReportsSkippedOversizedContent",
+          "deeplyNestedXmlIsUnknownWithoutCrashingAnalysis",
+          "allModulesCarryCommitAndBlobEvidence",
+          "supportsNodeManifestWithoutInventingJavaFacts",
+          "submodulesAndSymbolicLinksAreLimitationsNotSourceBlobs",
+          "capturedObjectsRemainStableAfterHeadMovesAndReplacementRefsChange",
+          "malformedManifestIsUnknownRatherThanAStartupFailure",
+          "missingPromisedObjectsDoNotTriggerNetworkFetch",
+          "unsupportedInputProducesExplicitUnknowns",
+          "externalXmlEntitiesAndPropertyCyclesCannotProvideFacts",
+          "explicitCompilerTargetOverridesAnUnreferencedJavaProperty",
+          "modernMavenDoesNotInheritTheDemoArchitectureOrRisks"
+        ]
+      },
+      {
+        "class": "io.refactorcontrolplane.analysis.ArchitectureRelationsContractTest",
+        "timestamp": null,
+        "reportSha256": "5e2923e8cca0ecbfc565476349f3f11a3853d36dda40dd1128498427fbe8a4f8",
+        "tests": 7,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "assertions": [
+          "configurationSchemaControllersViewsAndModuleEdgesHaveFixedObjectEvidence(String)[1]",
+          "configurationSchemaControllersViewsAndModuleEdgesHaveFixedObjectEvidence(String)[2]",
+          "pluginParametersAndSqlCommentsAreNotDeclarations",
+          "manyLiteralCandidatesAreBoundedAndReportedAsIncomplete",
+          "unsuccessfulMatchesCannotEscapeTheComputationBudget(String)[1]",
+          "unsuccessfulMatchesCannotEscapeTheComputationBudget(String)[2]",
+          "malformedExternalConfigurationAndUnsupportedCodeRemainUnknown"
+        ]
+      },
+      {
+        "class": "io.refactorcontrolplane.analysis.LegacyAnalysisAndPlanContractTest",
+        "timestamp": null,
+        "reportSha256": "95a3f12b15be25e9588663ec1a8610ca469069bdd0dcdf6d6cc3dcffc40e5791",
+        "tests": 2,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "assertions": [
+          "createsAnExecutableArticleMigrationDagAndAcceptanceContract",
+          "analyzesThePinnedUndocumentedLegacyFixtureWithSourceEvidence"
+        ]
+      },
+      {
+        "class": "io.refactorcontrolplane.api.AuditExportApiContractTest",
+        "timestamp": null,
+        "reportSha256": "91ea916a47ee8b2c515140c45499b1d669db39293dd1f6f79e79b3ae42d2722a",
+        "tests": 7,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "assertions": [
+          "onlyProjectAuditorsDownloadVersionedScopedReadOnlyReports",
+          "rejectsTamperedEvidenceAndBoundsBeforeParsingWithoutReturningPartialData",
+          "rejectsValidModelEvidenceLinkedThroughAnotherPlanScope",
+          "refusesOversizedUtf8OutputEvenWhenRowAndClobCharacterBudgetsPass",
+          "retainedModelRunsFromAnOldAttemptAreHistoricalRatherThanCurrentTaskExecutions",
+          "orphanModelReceiptsDoNotBypassTheNestedExportWhitelist",
+          "exportsHistoricalAttemptsAndUnknownOperationsWithSensitiveRawFieldsExcluded"
+        ]
+      },
+      {
+        "class": "io.refactorcontrolplane.api.ConfiguredProjectApiContractTest",
+        "timestamp": null,
+        "reportSha256": "704662ca2adf3b12f80abe19b1549b1cf20f02122dd30eb218faab8cede0a11f",
+        "tests": 2,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "assertions": [
+          "configuredControlPlaneDoesNotHostBusinessEndpointsOrTables",
+          "configuredPlanRequiresBothDecisionsBeforeRealAssignmentAndClaim"
+        ]
+      },
+      {
+        "class": "io.refactorcontrolplane.api.ControlPlaneApiContractTest",
+        "timestamp": null,
+        "reportSha256": "9edfd8edaf5901b7a58e33d7550714fbdb3a24ec0416e2e68642ff6ac3f9f929",
+        "tests": 4,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "assertions": [
+          "exposesEvidenceBackedOverviewForThePinnedDemoProject",
+          "mcpWriteToolsRequireTaskTokenIdempotencyKeyAndExpectedVersion",
+          "mcpWritesValidateTokensDriveLeasesAndPropagateSemanticChanges",
+          "implementsMcpInitializationAndTheApprovedToolCatalog"
+        ]
+      },
+      {
+        "class": "io.refactorcontrolplane.api.GateEvidenceApiContractTest",
+        "timestamp": null,
+        "reportSha256": "1dc981e90486c6dfb8192de616986f5044f6de0b786fc28a2cacb7811189d776",
+        "tests": 1,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "assertions": [
+          "platformValidationAndIndependentStatementsAreRequiredAndRecheckedAtEveryReleaseBoundary"
+        ]
+      },
+      {
+        "class": "io.refactorcontrolplane.api.GovernanceIdentityApiContractTest",
+        "timestamp": null,
+        "reportSha256": "3fa86af828a876a7f14502465cdc42d06c677b55280ac2e1b4fe5d9d5f1395b2",
+        "tests": 2,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "assertions": [
+          "governanceRequiresAServerAuthenticatedPrincipal",
+          "managerIssuesATaskCredentialWithoutPersistingIt"
+        ]
+      },
+      {
+        "class": "io.refactorcontrolplane.api.ProjectRevisionApiContractTest",
+        "timestamp": null,
+        "reportSha256": "b47a6e30194a4c7d422fab2afa81c8e7efd6192ac2537529f06bb604089e45a7",
+        "tests": 1,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "assertions": [
+          "revisionRequiresNewIndependentApprovalsAndRestartsWithoutOldProjection"
+        ]
+      },
+      {
+        "class": "io.refactorcontrolplane.api.TaskExecutorApiContractTest",
+        "timestamp": null,
+        "reportSha256": "10ed1a495351a4bf70e28d61c11342e53ccc2e50e05950b89f020a5c88ebf8d1",
+        "tests": 3,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "assertions": [
+          "inFlightDeliveryCannotRaceWithStopAndLateResultCannotReplaceNewExecution",
+          "mockActuallyWritesValidatesCommitsAndUsesExistingTaskSubmission",
+          "uncertainHttpDeliveryNeverResubmitsAndAcceptsOnlyMatchingVerifiedResult"
+        ]
+      },
+      {
+        "class": "io.refactorcontrolplane.api.WorkbenchContractTest",
+        "timestamp": null,
+        "reportSha256": "f6718dd145666dbc1bfbf5936b007bdafb7e016c4b65cd68f7aa335d057736e2",
+        "tests": 1,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "assertions": [
+          "snapshotRequiresIdentityAndReturnsAuthoritativeTasksWithoutAssignmentCredentials"
+        ]
+      },
+      {
+        "class": "io.refactorcontrolplane.api.WorkbenchDispatchContractTest",
+        "timestamp": null,
+        "reportSha256": "1cb7a401f3e33c8846a590810bfe7c4bd29d97b925e6741d41cb5cb0305ff372",
+        "tests": 4,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "assertions": [
+          "directoryIsManagerOnlyAndNeverReturnsCredentialMaterial",
+          "assignmentAndClaimUseRealJournalAndOnlyTheAssigneeCanClaim",
+          "untrustedFieldsAndUnmetDependenciesCannotCreateAnExecution",
+          "malformedVersionsAndUnknownMembersAreRejectedBeforeJournalWrites"
+        ]
+      },
+      {
+        "class": "io.refactorcontrolplane.ApplicationBootstrapContractTest",
+        "timestamp": null,
+        "reportSha256": "0ccc17e93aa01ce982558a5aa158e065420fa84c50e8ca76c272fe773b9b8455",
+        "tests": 1,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "assertions": [
+          "exposesASpringBootApplicationEntryPoint"
+        ]
+      },
+      {
+        "class": "io.refactorcontrolplane.article.ArticleApiContractTest",
+        "timestamp": null,
+        "reportSha256": "fb862d2617394d3edeff1e0eabf70a669e2b163ed3701845ea3acc4f51053451",
+        "tests": 3,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "assertions": [
+          "rejectsArticleWithoutARequiredTitle",
+          "createsAndReadsAnArticleThroughTheVersionedRestContract",
+          "preservesLegacyLengthTitlesAndRejectsLongerOnes"
+        ]
+      },
+      {
+        "class": "io.refactorcontrolplane.article.ArticlesOpenApiContractTest",
+        "timestamp": null,
+        "reportSha256": "ddfb39f348c996544148dc0edb037efe40d9f8892da7fdf0afe6227246ffac41",
+        "tests": 3,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "assertions": [
+          "openApiPatternsAreUsableByJavaScriptClients",
+          "articleCommandsAndResponsesMatchTheVersionedDocument",
+          "allReferencesResolveAndAllSuccessfulJsonOperationsDeclareBodies"
+        ]
+      },
+      {
+        "class": "io.refactorcontrolplane.article.LegacyPostMigrationContractTest",
+        "timestamp": null,
+        "reportSha256": "e979b54cbd1cc117599da15f04032a8031c84b3e943c5d23e6ff6930bd32c99c",
+        "tests": 14,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "assertions": [
+          "missingImportedSourceDoesNotProduceNegativeCounts",
+          "migratedTargetChangesAndDeletionNeverGetOverwrittenOrResurrected",
+          "sourceChangeAfterPreviewCannotImportDifferentData",
+          "excessiveBatchFailsBeforeAnyArticleIsWritten",
+          "unavailableSourceReturnsAConflictWithoutCreatingSourceTables",
+          "invalidRowBlocksWholeBatchWithoutTruncation",
+          "pinnedSamplePostsRetainAllFieldsAndRemainEditableThroughTheArticleModel",
+          "concurrentApplyHasExactlyOneImportAndAnIdempotentRetry",
+          "ambiguousOrMissingLocalTimeIsReportedWithoutGuessing",
+          "previewIsReadOnlyAndApplyPreservesSourceAndGeneratedIdMapping",
+          "requiresManagerIdentityAndExplicitPolicy",
+          "malformedJsonUsesTheDocumentedErrorShape",
+          "sourceAndTargetPreserveSubMicrosecondTime",
+          "databaseFailureRollsBackEveryArticleMappingAndAuditRecord"
+        ]
+      },
+      {
+        "class": "io.refactorcontrolplane.executor.ExecutionModelEvidenceContractTest",
+        "timestamp": null,
+        "reportSha256": "2e2e64b7983f3d97731ffa85bd15f15952a98129c7e5e35b5e7bf731048ca76f",
+        "tests": 1,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "assertions": [
+          "verifiesTypedReceiptsAfterJsonStorageNormalizesSmallLongsToIntegerNodes"
+        ]
+      },
+      {
+        "class": "io.refactorcontrolplane.executor.ExecutorConcurrencyAcceptanceTest",
+        "timestamp": null,
+        "reportSha256": "e167e6158c99592353d377b66a4ba5781e4449c7f18b0368c31de072e1e525e0",
+        "tests": 2,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "assertions": [
+          "threeRealExecutorsOverlapAndResumeWithoutRedeliveryAfterLostDurableCompletion",
+          "unauthorizedHttpCommitCannotSubmitAndStoppedCredentialsCannotAffectRetry"
+        ]
+      },
+      {
+        "class": "io.refactorcontrolplane.executor.ExecutorConflictAcceptanceTest",
+        "timestamp": null,
+        "reportSha256": "d14f003832bf1458d3ecdde51fef7894b72abb9110b136dfb686f21205b88230",
+        "tests": 8,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "assertions": [
+          "oversizedSemanticEvidenceIsRejectedBeforeJournalWithoutPoisoningRecovery",
+          "modelReceiptsRecoverAfterLostCompletionAndDetectTamperingWithoutRepeatingModelOrWork(boolean)[1]",
+          "modelReceiptsRecoverAfterLostCompletionAndDetectTamperingWithoutRepeatingModelOrWork(boolean)[2]",
+          "sameVersionDifferentFilesPassWorkerChecksButCombinedBehaviorRejectsProposal",
+          "committedSemanticArtifactInvalidatesRealExecutionAndOldCandidateAcrossRestart(String)[1]",
+          "committedSemanticArtifactInvalidatesRealExecutionAndOldCandidateAcrossRestart(String)[2]",
+          "samePathLeaseBlocksDeliveryAndActualSubmittedBranchesHaveTextConflict",
+          "excessiveModelEvidenceIsRejectedBeforeJournalOrSubmission"
+        ]
+      },
+      {
+        "class": "io.refactorcontrolplane.executor.HttpExecutorModelTraceContractTest",
+        "timestamp": null,
+        "reportSha256": "798b18330ba8f6c90d3aec9e401e779860e9939968496781a415717119951148",
+        "tests": 4,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "assertions": [
+          "rejectsModelReceiptsOnNonSubmittedStatesAndDuplicateCalls",
+          "preservesModelRequestDigestWithoutInventingToolCallsAndKeepsLegacyResultsReadable",
+          "rejectsAmbiguousTraceIdsAndUnexpectedModelPayload",
+          "rejectsFractionalTokensBeforeAnyNumericCoercion"
+        ]
+      },
+      {
+        "class": "io.refactorcontrolplane.git.GitWorktreeManagerContractTest",
+        "timestamp": null,
+        "reportSha256": "30f0ddd87eff3d7d9715b7afcccc40794faee019eeedd3e3dc99b89fedd0c0be",
+        "tests": 4,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "assertions": [
+          "verifiesDiffsLargerThanTheProcessOutputPipe",
+          "repairsMissingBaseMetadataOnlyWhenTheTaskBranchStillEqualsTheRequestedBase",
+          "createsThreeIsolatedTaskBranchesIdempotentlyWithoutMovingMain",
+          "taskIdsThatNormalizeToTheSameSlugStillReceiveDifferentWorktrees"
+        ]
+      },
+      {
+        "class": "io.refactorcontrolplane.governance.EvidenceStoreContractTest",
+        "timestamp": null,
+        "reportSha256": "dc70225bfa8787d8d8de59a0246125acd590d069230448ce276949759afcbfd4",
+        "tests": 4,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "assertions": [
+          "bindingChangesAndOversizedContentAreRejectedBeforePublication",
+          "missingTamperedAndWrongPlanEvidenceNeverLoads",
+          "immutableContentReplaysAcrossRestartButDifferentActorOrContentCannotReuseKey",
+          "decimalPrecisionSurvivesStorageAndIdempotentReplay"
+        ]
+      },
+      {
+        "class": "io.refactorcontrolplane.governance.GovernedProjectContractTest",
+        "timestamp": null,
+        "reportSha256": "a48d4c678b1c5bfe0aa895d0f3f071835e488e1d61b1f298c09e6cd3639cca09",
+        "tests": 10,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "assertions": [
+          "acceptanceRequiresEveryGateAndOnlyProducesAHumanMergeProposal",
+          "invalidSemanticPublicationDoesNotPartiallyChangeStateOrConsumeItsKey",
+          "changesOutsideAuthorizedScopeAreRejectedAndAudited",
+          "auditExportLinksTaskChangesTestsApprovalsAndRisks",
+          "changingOnlyStatusCannotMakeAnOldTaskPackageCurrentAgain",
+          "gateEnforcesTheApprovingRole",
+          "breakingContractChangeInvalidatesDependentTaskAndIsIdempotent",
+          "forbiddenPathOverridesAnAllowedParentPath",
+          "acceptedButUnmergedWorkLosesMergeEligibilityWhenItsContractChanges",
+          "semanticInvalidationClearsAllEarlierQualityGates"
+        ]
+      },
+      {
+        "class": "io.refactorcontrolplane.integration.ControlledProcessTest",
+        "timestamp": null,
+        "reportSha256": "9c0da80c1bfe1d91f5e64cbfd37da299125a5d73d989d89f677be39d6605cc2f",
+        "tests": 4,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "assertions": [
+          "backgroundChildrenAreRejectedAndCleanedUp",
+          "interruptCleansUpBeforeWaitingForOutputReaders",
+          "timeoutTerminatesTheProcess",
+          "stdoutAndStderrAreDrainedAndBoundedWithoutDeadlock"
+        ]
+      },
+      {
+        "class": "io.refactorcontrolplane.integration.IntegrationApiContractTest",
+        "timestamp": null,
+        "reportSha256": "d4acdea154e7b5ad285aee1a3f65309752460a479cc2b93337035095f13872ac",
+        "tests": 3,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "assertions": [
+          "candidatesRequireProjectAuthentication",
+          "unknownValidationReconciliationRequiresIdentity",
+          "commandsCannotBeSuppliedByApiCallers"
+        ]
+      },
+      {
+        "class": "io.refactorcontrolplane.integration.IntegrationConflictAnalyzerContractTest",
+        "timestamp": null,
+        "reportSha256": "4b7a7cc3065e3e0c9f0089d14b83ec7c8be004ccdb42de7cbc3dc9da2dd0b172",
+        "tests": 1,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "assertions": [
+          "reportsTextAndSemanticConflictsWithAffectedTasksAndSuggestedOrder"
+        ]
+      },
+      {
+        "class": "io.refactorcontrolplane.integration.IntegrationGitRecoveryTest",
+        "timestamp": null,
+        "reportSha256": "ba8f8f54e3c6abde5441542c09b2bc5763ba5f9631ac5c437435c8c607497fc4",
+        "tests": 4,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "assertions": [
+          "interruptionBeforePublishingOwnedDirectoryCanRetry",
+          "interruptionAfterPublishingOwnedDirectoryCanRetry",
+          "validationWorktreeCanReadLongLegacyPathsInItsIndependentObjectRepository",
+          "racingForeignDirectoryIsPreservedByteForByte"
+        ]
+      },
+      {
+        "class": "io.refactorcontrolplane.integration.IntegrationWorkflowTest",
+        "timestamp": null,
+        "reportSha256": "9cccba930bb92a13f093d35d1d5884aeb0bd6441daf8f53ad360a8f65c9ac66e",
+        "tests": 10,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "assertions": [
+          "acceptanceDoesNotAllowOmittingAnUnmergedDependency",
+          "replayDoesNotOverwriteForeignCandidateBranchOrRerunUncertainCommands",
+          "failedValidationRegistrationCannotLeaveAnOrphanRunningAttempt",
+          "threeRealExecutionsValidateAndOnlyHumanApprovedExactCombinationCanBeProposed",
+          "configurationCannotUseEscapingWorkingDirectoriesAndSourceMutationFailsValidation",
+          "differentFilesCanMergeButFailCompilationThenNewTaskExecutionRepairsTheCombination",
+          "sameFileLeaseBlocksConcurrentWriterAndActualMergeConflictIsRecorded",
+          "sourceTargetAndValidationConfigurationChangesInvalidatePassingEvidence",
+          "staleUnknownAttemptCanBeReconciledWithoutErasingEvidenceOrPassingGates",
+          "wrongRolesSelfApprovalAndReusedKeysAreRejected"
+        ]
+      },
+      {
+        "class": "io.refactorcontrolplane.mcp.GitExecutionWorkflowContractTest",
+        "timestamp": null,
+        "reportSha256": "43a51399e42d00d6af0f5aff49bc933c28f7afc9dfb12a05dafb85f6c3ef102f",
+        "tests": 3,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "assertions": [
+          "rejectedReviewCanStartANewExecutionWithoutDiscardingThePreviousWorktree",
+          "claimCreatesAnIsolatedExecutionAndSubmissionUsesTheRealCommitAndLease",
+          "pendingClaimReusesTheDurableExecutionAndCannotHideAnUnauthorizedDiff"
+        ]
+      },
+      {
+        "class": "io.refactorcontrolplane.mcp.McpGovernanceBoundaryContractTest",
+        "timestamp": null,
+        "reportSha256": "57bd34d7bfe752b6790bdfdec6001e1a3da0d2057395dc5d14ee6034fc2ff255",
+        "tests": 13,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "assertions": [
+          "semanticChangesInvalidateTheTransitiveDownstreamAndRejectVersionRollback",
+          "resultSerializationFailureFreezesWritesAndRecoversThePendingOperation",
+          "failedJournalTerminationBlocksLaterWritesUntilRecovery",
+          "taskTokenCannotReleaseAnotherExecutionsLease",
+          "legacySemanticVersionsDoNotPreventStartup",
+          "readyTasksAndClaimsRespectPredecessors",
+          "rejectedSemanticPublicationReplaysToTheSameState",
+          "taskTokenCannotSelectAnApprovingRole",
+          "expiredPendingHeartbeatReachesATerminalJournalStateWithoutBlockingStartup",
+          "journalCompletionFailureDoesNotPublishAnUncommittedProjection",
+          "legacyApprovalsAreRecoverableHistoryButCannotAuthorizeNewWork",
+          "taskTokenCannotAdvanceItselfThroughApprovalStates",
+          "managerCanRetryABlockedTaskWithAFreshCredential"
+        ]
+      },
+      {
+        "class": "io.refactorcontrolplane.mcp.McpRuntimeRecoveryContractTest",
+        "timestamp": null,
+        "reportSha256": "d0ca7c428e7bc2726c6e08abafd7eafcf4e4b59c4e0018c24b0d0e470ac94a83",
+        "tests": 3,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "assertions": [
+          "completesAPendingInMemoryOperationDuringRestartRecovery",
+          "replaysDependentOperationsInJournalOrderEvenWhenKeysSortInReverse",
+          "rebuildsSemanticStateAndActiveLeasesFromTheOperationJournal"
+        ]
+      },
+      {
+        "class": "io.refactorcontrolplane.mcp.McpSchemaContractTest",
+        "timestamp": null,
+        "reportSha256": "416f6012c9eff0e4f2c699cf19d8462ffc191e4d51eceaa686d72bbacebf94d3",
+        "tests": 6,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "assertions": [
+          "excessiveLeaseDurationIsRejectedBeforeJournaling",
+          "everyToolDeclaresSpecificInputAndOutputContracts",
+          "unicodeIdempotencyKeysFitThePublishedContractAndDatabase",
+          "schemaPatternsCompileInJavaScriptClients",
+          "readToolResultsMatchTheirPublishedSchemas",
+          "malformedArgumentsFailBeforeAnyDomainWrite"
+        ]
+      },
+      {
+        "class": "io.refactorcontrolplane.model.ModelGatewayContractTest",
+        "timestamp": null,
+        "reportSha256": "61d9f3e02147fd6558a093329b4bb1d0be529a3dd43bdfb1de32e510eec0198b",
+        "tests": 3,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "assertions": [
+          "httpExecutorUsesOpenAiCompatibleEndpointAndKeepsSecretOutOfResult",
+          "rejectsEndpointsOutsideTheExplicitEnterpriseAllowlist",
+          "mockExecutorProducesTraceableDeterministicOutputWithoutSourceInAudit"
+        ]
+      },
+      {
+        "class": "io.refactorcontrolplane.ownership.PathLeaseRegistryContractTest",
+        "timestamp": null,
+        "reportSha256": "7744e401eeff0014a663ca2eb313851f1cb8d2209407784c822a6f50215dd927",
+        "tests": 7,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "assertions": [
+          "heartbeatAndReleaseUseVersionAndExecutionConditions",
+          "projectPathPolicyBlocksCaseAliasesOnCaseInsensitiveWorktrees",
+          "permitsCompatibleModesAndNonOverlappingExclusiveWrites",
+          "expiredLeaseIsPrunedWhenAReplacementIsReserved",
+          "anExpiredLeaseCannotBeRevivedWithAClockRollbackAfterReplacement",
+          "normalizesRepositoryRelativePathsAndRejectsTraversal",
+          "rejectsIncompatibleLeaseOnAnOverlappingPathWithAnExplicitReason"
+        ]
+      },
+      {
+        "class": "io.refactorcontrolplane.persistence.AuditEventRepositoryContractTest",
+        "timestamp": null,
+        "reportSha256": "477472b99383e75e1032a32b30c77a4f3e9950c90f9cf243b6008bff71c2d7ce",
+        "tests": 2,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "assertions": [
+          "persistsIdempotentEventsAndUsesExpectedVersionForCompletion",
+          "replaysByDatabaseJournalSequenceWhenTimestampsAndKeysCannotExpressExecutionOrder"
+        ]
+      },
+      {
+        "class": "io.refactorcontrolplane.project.ProjectPlanContractTest",
+        "timestamp": null,
+        "reportSha256": "b7f2dd2284712c209eb444b8f6c9bd1e9558363d77fe2f9b9311c5ebead4c0c9",
+        "tests": 22,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "assertions": [
+          "approvedSnapshotCannotBeReplacedByEditedConfigurationOrDatabase",
+          "baselineChangeBlocksWritesBeforeJournalAndRestart",
+          "newWorkingDirectoryCannotAssumePrerequisiteOutputsExistInItsBase",
+          "approvalsBindRoleSubjectFingerprintAndOrder",
+          "oldUnboundJournalIsNeverReinterpretedAsConfiguredProject",
+          "sameRuntimeClaimsAndRecoversTwoRepositoryLayouts(String)[1]",
+          "sameRuntimeClaimsAndRecoversTwoRepositoryLayouts(String)[2]",
+          "integrationCannotBypassApprovedBaselineOrTaskChecks(String)[1]",
+          "integrationCannotBypassApprovedBaselineOrTaskChecks(String)[2]",
+          "invalidPlansNeverReachPersistence(String)[1]",
+          "invalidPlansNeverReachPersistence(String)[2]",
+          "invalidPlansNeverReachPersistence(String)[3]",
+          "invalidPlansNeverReachPersistence(String)[4]",
+          "invalidPlansNeverReachPersistence(String)[5]",
+          "invalidPlansNeverReachPersistence(String)[6]",
+          "invalidPlansNeverReachPersistence(String)[7]",
+          "invalidPlansNeverReachPersistence(String)[8]",
+          "invalidPlansNeverReachPersistence(String)[9]",
+          "invalidPlansNeverReachPersistence(String)[10]",
+          "invalidPlansNeverReachPersistence(String)[11]",
+          "invalidPlansNeverReachPersistence(String)[12]",
+          "acceptedScaffoldBecomesReviewedBaselineWithoutMovingMain"
+        ]
+      },
+      {
+        "class": "io.refactorcontrolplane.project.RequirementPlanContractTest",
+        "timestamp": null,
+        "reportSha256": "70cfe7d86b29c1bf3d37e67409c50297a12f18e14d73bc6cf7ba3ea13fe686f2",
+        "tests": 1,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "assertions": [
+          "approvedPlanCanDeclareExactRequirementTaskLinksAndRejectUnknownTasks"
+        ]
+      },
+      {
+        "class": "io.refactorcontrolplane.project.SchedulingContractTest",
+        "timestamp": null,
+        "reportSha256": "71373b9c4f8aeed3ed35cc3717c468f117ded3ec50199d4f9cac61ee7543952b",
+        "tests": 12,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "assertions": [
+          "unknownExecutionKeepsCapacityUntilIndependentStopConfirmationAndFencesOldCredentials(String)[1]",
+          "unknownExecutionKeepsCapacityUntilIndependentStopConfirmationAndFencesOldCredentials(String)[2]",
+          "unknownExecutionKeepsCapacityUntilIndependentStopConfirmationAndFencesOldCredentials(String)[3]",
+          "invalidCapacityNeverBindsAPlan(String)[1]",
+          "invalidCapacityNeverBindsAPlan(String)[2]",
+          "invalidCapacityNeverBindsAPlan(String)[3]",
+          "invalidCapacityNeverBindsAPlan(String)[4]",
+          "invalidCapacityNeverBindsAPlan(String)[5]",
+          "invalidCapacityNeverBindsAPlan(String)[6]",
+          "missingActorConfigurationIsVisibleAndCannotClaim",
+          "admissionIsAtomicAndOccupiedSlotsSurviveRestartUntilVerifiedSubmission(String)[1]",
+          "admissionIsAtomicAndOccupiedSlotsSurviveRestartUntilVerifiedSubmission(String)[2]"
+        ]
+      },
+      {
+        "class": "io.refactorcontrolplane.workpackage.WorkPackageStatusContractTest",
+        "timestamp": null,
+        "reportSha256": "44dabe5e1b3bfeab46d2b98e9ad06570edcb533b8879b6bd8ab0d37ed8ee326c",
+        "tests": 1,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "assertions": [
+          "exposesTheApprovedLifecycleStates"
+        ]
+      },
+      {
+        "class": "io.refactorcontrolplane.workpackage.WorkPackageTransitionContractTest",
+        "timestamp": null,
+        "reportSha256": "5f6e7a0852154747295e8b877bdabce45c75af209b412abbbd12ef1b8159f596",
+        "tests": 1,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "assertions": [
+          "enforcesTheApprovedTransitionMatrix"
+        ]
+      }
+    ],
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "build": "SUCCESS",
+    "logSha256": "4bd2e6d4a69845ea7ee2b6721d4f9b4fed683ce1acd049e2a341c9a7fe767220"
+  },
+  "frontend": {
+    "total": 37,
+    "files": 9,
+    "failures": 0,
+    "skipped": 0,
+    "typecheckAndBuild": "PASSED",
+    "reportSha256": "a854244aa83c0278eaa2e325a2779cc7f96285038f8853f4094cada3296f4141"
+  },
+  "python": {
+    "total": 20,
+    "failures": 0,
+    "logSha256": "68265b4a3ef7dc0826c3bc2c6900f3d6bc374a1c093fdd84a29125e174d63831",
+    "log": ".runtime/phase11-full/python-tests-release.log"
+  },
+  "baselineAssertions": {
+    "MVP-01": [
+      {
+        "class": "io.refactorcontrolplane.analysis.LegacyAnalysisAndPlanContractTest",
+        "assertion": "analyzesThePinnedUndocumentedLegacyFixtureWithSourceEvidence"
+      },
+      {
+        "class": "io.refactorcontrolplane.analysis.AnalysisTrustContractTest",
+        "assertion": "allModulesCarryCommitAndBlobEvidence"
+      }
+    ],
+    "MVP-02": [
+      {
+        "class": "io.refactorcontrolplane.analysis.LegacyAnalysisAndPlanContractTest",
+        "assertion": "createsAnExecutableArticleMigrationDagAndAcceptanceContract"
+      },
+      {
+        "class": "io.refactorcontrolplane.api.ConfiguredProjectApiContractTest",
+        "assertion": "configuredPlanRequiresBothDecisionsBeforeRealAssignmentAndClaim"
+      }
+    ],
+    "MVP-03": [
+      {
+        "class": "io.refactorcontrolplane.executor.ExecutorConcurrencyAcceptanceTest",
+        "assertion": "threeRealExecutorsOverlapAndResumeWithoutRedeliveryAfterLostDurableCompletion"
+      }
+    ],
+    "MVP-04": [
+      {
+        "class": "io.refactorcontrolplane.executor.ExecutorConflictAcceptanceTest",
+        "assertion": "samePathLeaseBlocksDeliveryAndActualSubmittedBranchesHaveTextConflict"
+      },
+      {
+        "class": "io.refactorcontrolplane.ownership.PathLeaseRegistryContractTest",
+        "assertion": "rejectsIncompatibleLeaseOnAnOverlappingPathWithAnExplicitReason"
+      }
+    ],
+    "MVP-05": [
+      {
+        "class": "io.refactorcontrolplane.executor.ExecutorConflictAcceptanceTest",
+        "assertion": "committedSemanticArtifactInvalidatesRealExecutionAndOldCandidateAcrossRestart(String)[1]"
+      },
+      {
+        "class": "io.refactorcontrolplane.executor.ExecutorConflictAcceptanceTest",
+        "assertion": "committedSemanticArtifactInvalidatesRealExecutionAndOldCandidateAcrossRestart(String)[2]"
+      }
+    ],
+    "MVP-06": [
+      {
+        "class": "io.refactorcontrolplane.executor.ExecutorConcurrencyAcceptanceTest",
+        "assertion": "unauthorizedHttpCommitCannotSubmitAndStoppedCredentialsCannotAffectRetry"
+      },
+      {
+        "class": "io.refactorcontrolplane.governance.GovernedProjectContractTest",
+        "assertion": "changesOutsideAuthorizedScopeAreRejectedAndAudited"
+      }
+    ],
+    "MVP-07": [
+      {
+        "class": "io.refactorcontrolplane.executor.ExecutorConflictAcceptanceTest",
+        "assertion": "sameVersionDifferentFilesPassWorkerChecksButCombinedBehaviorRejectsProposal"
+      },
+      {
+        "class": "io.refactorcontrolplane.executor.ExecutorConflictAcceptanceTest",
+        "assertion": "samePathLeaseBlocksDeliveryAndActualSubmittedBranchesHaveTextConflict"
+      }
+    ],
+    "MVP-08": [
+      {
+        "class": "io.refactorcontrolplane.api.ConfiguredProjectApiContractTest",
+        "assertion": "configuredControlPlaneDoesNotHostBusinessEndpointsOrTables"
+      }
+    ],
+    "MVP-09": [
+      {
+        "class": "io.refactorcontrolplane.api.GateEvidenceApiContractTest",
+        "assertion": "platformValidationAndIndependentStatementsAreRequiredAndRecheckedAtEveryReleaseBoundary"
+      },
+      {
+        "class": "io.refactorcontrolplane.governance.GovernedProjectContractTest",
+        "assertion": "acceptanceRequiresEveryGateAndOnlyProducesAHumanMergeProposal"
+      }
+    ],
+    "MVP-10": [
+      {
+        "class": "io.refactorcontrolplane.integration.IntegrationWorkflowTest",
+        "assertion": "threeRealExecutionsValidateAndOnlyHumanApprovedExactCombinationCanBeProposed"
+      }
+    ],
+    "MVP-11": [
+      {
+        "class": "io.refactorcontrolplane.integration.IntegrationWorkflowTest",
+        "assertion": "replayDoesNotOverwriteForeignCandidateBranchOrRerunUncertainCommands"
+      },
+      {
+        "class": "io.refactorcontrolplane.integration.IntegrationGitRecoveryTest",
+        "assertion": "racingForeignDirectoryIsPreservedByteForByte"
+      },
+      {
+        "class": "io.refactorcontrolplane.mcp.McpGovernanceBoundaryContractTest",
+        "assertion": "resultSerializationFailureFreezesWritesAndRecoversThePendingOperation"
+      }
+    ],
+    "MVP-12": [
+      {
+        "class": "io.refactorcontrolplane.api.AuditExportApiContractTest",
+        "assertion": "onlyProjectAuditorsDownloadVersionedScopedReadOnlyReports"
+      },
+      {
+        "class": "io.refactorcontrolplane.api.AuditExportApiContractTest",
+        "assertion": "retainedModelRunsFromAnOldAttemptAreHistoricalRatherThanCurrentTaskExecutions"
+      }
+    ]
+  },
+  "browser": {
+    "planScope": "41cbcb50239b4a85b9c7dadc6b0cfca2c6927c580bdde35ae3d1f78b92078481",
+    "candidateId": "246a5e89-8fa5-4be7-8cfb-0c8b9bb7c25b",
+    "candidateFingerprint": "92ca871b597f6c2dd9133f93543e8388dc17bc27180243d2a66a5abb31a13c16",
+    "candidateCommit": "638c8073a0508d7938548c693146fac64949b3fd",
+    "execution": {
+      "taskId": "SCAFFOLD",
+      "executionId": "6917caa2-9cf3-4ddc-887f-4a6d34723a58",
+      "branch": "codex/task-scaffold-6917caa2-9cf3-4ddc-887f-4a6d34723a58-01fc802220bf",
+      "baseCommit": "5e62608af333b5757bf767e05b19e2b0d56f0afb",
+      "commitSha": "e4e84c3d9d80160e6281e34c5232dc4067168736"
+    },
+    "taskCommit": "e4e84c3d9d80160e6281e34c5232dc4067168736",
+    "taskStatus": "ACCEPTED",
+    "validationId": "ec9d32c9-6b72-40bb-b483-24808569696f",
+    "candidateValidation": {
+      "app": "D:\\AAWorkSpeace\\this1is1i\\refactor-control-plane\\.runtime\\phase11-browser\\managed\\.refactor-integrations\\246a5e89-8fa5-4be7-8cfb-0c8b9bb7c25b\\validation-ec9d32c9-6b72-40bb-b483-24808569696f\\modern\\article-app",
+      "candidateCommit": "638c8073a0508d7938548c693146fac64949b3fd",
+      "mysql": {
+        "scope": "Milestone10 article behavior and independent read-only source migration; governance binding supplied by caller",
+        "serverVersion": "D:\\Database\\MySQL\\MySQL Server 8.0\\bin\\mysqld.exe  Ver 8.0.31 for Win64 on x86_64 (MySQL Community Server - GPL)",
+        "sourceCommit": "5e62608af333b5757bf767e05b19e2b0d56f0afb",
+        "sourceSqlSha256": "74c5104833cfcddbc61b1a28a5049e4b4f615c607f3a491f239bda9b9a586307",
+        "sourceRows": 7,
+        "tests": [
+          {
+            "class": "ArticleApiContractTest",
+            "tests": 4,
+            "failures": 0,
+            "errors": 0,
+            "skipped": 0
+          },
+          {
+            "class": "ArticleDatabaseContractTest",
+            "tests": 3,
+            "failures": 0,
+            "errors": 0,
+            "skipped": 0
+          },
+          {
+            "class": "MySqlEngineContractTest",
+            "tests": 4,
+            "failures": 0,
+            "errors": 0,
+            "skipped": 0
+          },
+          {
+            "class": "ArticleBehaviorContractTest",
+            "tests": 7,
+            "failures": 0,
+            "errors": 0,
+            "skipped": 0
+          },
+          {
+            "class": "ArticleSessionContractTest",
+            "tests": 1,
+            "failures": 0,
+            "errors": 0,
+            "skipped": 0
+          },
+          {
+            "class": "ArticleLoginContractTest",
+            "tests": 1,
+            "failures": 0,
+            "errors": 0,
+            "skipped": 0
+          },
+          {
+            "class": "MySqlMigrationContractTest",
+            "tests": 1,
+            "failures": 0,
+            "errors": 0,
+            "skipped": 0
+          }
+        ],
+        "jvmZone": "Pacific/Auckland",
+        "governanceDatabaseTouched": false,
+        "migration": {
+          "sourceZone": "Europe/Istanbul",
+          "mappings": [
+            {
+              "sourceBlogId": 3,
+              "legacyId": 16,
+              "articleId": 18,
+              "targetUtcTime": "2016-12-15T07:44:47Z",
+              "publicPath": "/eyupgevenim/Anasayfa/Asp-Dot-Net",
+              "sourceLocalTime": "2016-12-15T10:44:47",
+              "targetMenuId": 2005,
+              "sourceFingerprint": "e4493675926ac9eff2cc366e70ba1721ff399532808cd07eae006abb8ec542d1"
+            },
+            {
+              "sourceBlogId": 3,
+              "legacyId": 17,
+              "articleId": 19,
+              "targetUtcTime": "2016-12-15T07:48:04Z",
+              "publicPath": "/eyupgevenim/Anasayfa/Cevik-Yazilim",
+              "sourceLocalTime": "2016-12-15T10:48:04",
+              "targetMenuId": 2005,
+              "sourceFingerprint": "1ae0d4de48d70514c5baffa2dae1c0e3f78e7e9ad0cf5e39ef0312adfe8ef9ca"
+            },
+            {
+              "sourceBlogId": 3,
+              "legacyId": 18,
+              "articleId": 20,
+              "targetUtcTime": "2016-12-15T08:02:19Z",
+              "publicPath": "/eyupgevenim/Anasayfa/Man-must-explore-and-this-is-exploration-at-its-greatest",
+              "sourceLocalTime": "2016-12-15T11:02:19",
+              "targetMenuId": 2005,
+              "sourceFingerprint": "57009120e86c41852875f7c14b75d05f25f5b913450a0b380938bafc688c3b69"
+            },
+            {
+              "sourceBlogId": 8,
+              "legacyId": 22,
+              "articleId": 21,
+              "targetUtcTime": "2016-12-20T06:43:42Z",
+              "publicPath": "/alpayhoca/Anasayfa/Deneme-Demo-Baslik",
+              "sourceLocalTime": "2016-12-20T09:43:42",
+              "targetMenuId": 2006,
+              "sourceFingerprint": "ec3f27c8c6c104bf62395ac65614b7890494db1512fc3f9e270291f02343d91d"
+            },
+            {
+              "sourceBlogId": 3,
+              "legacyId": 27,
+              "articleId": 22,
+              "targetUtcTime": "2016-12-20T21:08:26Z",
+              "publicPath": "/eyupgevenim/%C4%B0leti%C5%9Fim/Iletisim",
+              "sourceLocalTime": "2016-12-21T00:08:26",
+              "targetMenuId": 2007,
+              "sourceFingerprint": "80176ac9048d1d71722d28aa782827c13ebccc36f6bd8534b67cf0529b3ccedf"
+            },
+            {
+              "sourceBlogId": 3,
+              "legacyId": 28,
+              "articleId": 23,
+              "targetUtcTime": "2016-12-21T08:37:44Z",
+              "publicPath": "/eyupgevenim/Anasayfa/grup-list-demo",
+              "sourceLocalTime": "2016-12-21T11:37:44",
+              "targetMenuId": 2005,
+              "sourceFingerprint": "98aa8eefd665dda154d31812427c8cd85749bcde3d12be66d660d905d04bedc0"
+            },
+            {
+              "sourceBlogId": 3,
+              "legacyId": 37,
+              "articleId": 24,
+              "targetUtcTime": "2016-12-21T18:32:20Z",
+              "publicPath": "/eyupgevenim/Anasayfa/Test-Title",
+              "sourceLocalTime": "2016-12-21T21:32:20",
+              "targetMenuId": 2005,
+              "sourceFingerprint": "1ef603d13f917fa5105e4b7da8d024fb8748ccfeee078098ebe9bb61ca7e8dff"
+            }
+          ],
+          "targetStatus": "PUBLISHED",
+          "sourceUnchanged": true,
+          "deletedTargetPreserved": true,
+          "successAudits": 1,
+          "rollbackVerified": true,
+          "concurrentImported": 7
+        }
+      },
+      "mysqlFixture": "D:\\AAWorkSpeace\\this1is1i\\refactor-control-plane\\.runtime\\phase10-candidate-db-a5ea48309d3a4a589af309817d619741",
+      "fixtureState": "STOPPED",
+      "frontend": "tests, typecheck and production build passed"
+    },
+    "configuredHealth": {
+      "status": "UP"
+    },
+    "configuredBusinessApiStatus": 404,
+    "freshBuildClassesEqualBrowserServer": true,
+    "demoHealth": {
+      "status": "UP"
+    },
+    "demoOverviewKeys": [
+      "projectId",
+      "analysis",
+      "plan",
+      "mergePolicy",
+      "dataBoundary"
+    ],
+    "demoMcpToolCount": 15,
+    "demoStopped": true,
+    "managedMainBefore": "5e62608af333b5757bf767e05b19e2b0d56f0afb",
+    "managedMainAfter": "5e62608af333b5757bf767e05b19e2b0d56f0afb"
+  },
+  "audit": {
+    "file": "milestone11-audit.json",
+    "sha256": "c0dc631b405d09724f30d789e2b7169f2903c41f240761521cdcec31d3b5e33a",
+    "payloadSha256": "db819e6ca1504f27665a4086bee1f5b9c3859f7d5fa037b9ffab56b72fbe73ee",
+    "selectedCandidate": {
+      "eligibility": "ELIGIBLE_AT_OBSERVATION",
+      "id": "246a5e89-8fa5-4be7-8cfb-0c8b9bb7c25b"
+    },
+    "downloadObserved": true
+  },
+  "browserObservations": [
+    "architect confirmation then manager execution approval",
+    "manager assigned SCAFFOLD; developer claimed isolated worktree",
+    "developer self-candidate creation disabled; independent lead created candidate",
+    "QA ran actual MySQL/Vue checks and bound two test gates to exact validation",
+    "lead review and business statements explicitly labeled fixture roles; ACCEPTED",
+    "lead generated human-only proposal; auditor downloaded JSON",
+    "anonymous seven old posts and encoded Turkish legacy path readable",
+    "author-one: six managed posts/two menus; author-two: one post/one menu",
+    "created published test article8; title/body edited to version2, same publicPath; rendered HTML",
+    "soft-deleted only new article8; original seven public posts remain"
+  ],
+  "cleanup": {
+    "platformStopped": true,
+    "articleStopped": true,
+    "candidateDatabaseState": "STOPPED",
+    "browserDatabaseState": "STOPPED",
+    "finalHarnessDatabaseState": "STOPPED",
+    "finalHarnessSampleStopped": true,
+    "partialStartupPolicy": "On unverifiable SQL identity/shutdown, retain files and UNCONFIRMED; sampleStopped null, no forced launcher termination or automatic retry"
+  },
+  "limitations": [
+    "local test identities, not production human approval",
+    "no arbitrary semantic equivalence, all-language AST, multi-node or power-loss durability guarantee",
+    "no customer production database cutover",
+    "partial MySQL startup may require manual process inspection; never reported stopped without confirmation"
+  ],
+  "releaseHarnessSources": {
+    "scripts/release_preview.py": "b0aa869493685bda768ace604d3d7d2c0cb543523d9998e2a4f3504e5603f29b",
+    "scripts/tests/test_release_preview.py": "a3d51ebd98895cbc54139041da9bcf51f311847c1aaeea5a4f9dfc30beb139d3",
+    "backend/pom.xml": "e777a1690d5a0f72054d4b08bfbfc0e2e53e48209bb16a0081b2af22190fcef0"
+  }
+}

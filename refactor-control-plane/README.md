@@ -2,7 +2,7 @@
 
 面向大型企业遗留系统重构的治理与协作控制平面。它把“项目理解 → 架构决策 → 工作拆分 → 隔离执行 → 冲突分析 → 质量验收”连接成可追踪闭环；人工开发者、企业模型与闭源智能体只是可替换执行器。
 
-当前仓库是可运行的 v0.1 参考实现，核心治理链、分析快照、本地文章数据迁移与接口契约已升级；真实旧库兼容与工作台真实性仍有待完成项，见[当前状态](docs/status.md)。它不会自动合并 `main`，不会把源码发往公网模型，也不替代企业的身份平台、代码托管或 CI/CD。
+当前仓库已完成 v0.1 单项目、单节点 MVP 验收。12 项基线、真实 MySQL 文章迁移、角色浏览器流程和审计下载均有本轮证据，见[发布验收](docs/acceptance/milestone11-release.md)及[演示手册](docs/release-demo.md)。平台只生成人工合并建议，源码不发往公网模型；生产身份、多节点和客户环境接入仍需单独实施。
 
 ## 已实现能力
 
@@ -17,11 +17,11 @@
 - 代码 Review、单元/集成/业务验收四类门禁；配置模式采信平台实际验证与独立人工说明，绑定精确执行、提交及不可变证据，验收前重查内容与时效；全部通过后只产生人工合并建议。见[证据门禁说明](docs/evidence-store.md)。
 - Mock 模型网关与 OpenAI-compatible 企业 HTTP 网关处理文本请求；模型审计保存上下文/输出哈希，不保存密钥或源码正文。
 - Mock/HTTP 任务执行器接通真实工作树修改、检查和提交；工作台支持启动与状态查询，结果未知时保留容量、只查询原 ID。配置和协议见[任务执行器](docs/task-executors.md)；[三执行器并发与恢复验收](docs/acceptance/milestone8-execution.md)已通过。
-- HTTP 模型回报与真实执行/提交绑定，区分请求工具和实际调用记录；配置模式契约/Schema 发布关联真实改动与资源消费者。证据有明确来源，不能替代平台测试；[9B 执行与冲突验收](docs/acceptance/milestone9b-execution.md)已通过，完整审计导出留在 9C。
+- HTTP 模型回报与真实执行/提交绑定，区分请求工具和实际调用记录；配置模式契约/Schema 发布关联真实改动与资源消费者。证据有明确来源，不能替代平台测试；[9B 执行与冲突验收](docs/acceptance/milestone9b-execution.md)及[9C 审计导出](docs/acceptance/milestone9c-audit.md)已完成。
 - Integration AI 冲突报告，包括路径、API Contract、DB Schema、影响任务和建议顺序。
 - MCP Streamable HTTP JSON-RPC 入口，提供规格批准的 15 个工具及具体输入/输出 Schema；写操作强制 task token、幂等键和预期版本，日志写入前校验参数，见[工具契约](docs/contracts/project-mcp.md)。
 - H2 项目级审计/操作日志，使用数据库权威幂等键、单调 journal sequence、请求/结果日志与版本条件推进；重启按执行全序恢复任务、语义版本和未过期租约，并完成可安全重放的 `PENDING` 操作；随机任务令牌不落库。
-- Vue 3 八角色工作台和一个可运行的文章管理迁移切片（H2 持久化 Spring Boot CRUD、OpenAPI、启动时执行的非破坏性 SQL、Vue 3 增删改查视图）。
+- Vue 3 八角色工作台及独立 Vue/Spring Boot/MySQL 文章切片：博客归属隔离、会话/CSRF、HTML 白名单、稳定旧 URL、CAS 编辑与软删除。配置模式平台不注册文章业务接口或创建业务表，旧 H2 CRUD 仅保留 demo。
 - 旧 `posts` 本地快照预检/迁移，显式时区与状态、原字段与 ID 映射、事务和幂等审计；遇到目标编辑/删除保留现状。操作与未覆盖范围见[文章迁移说明](docs/article-migration.md)。
 
 ## 架构
@@ -59,7 +59,7 @@ Spring Boot Control Plane
 
 ## 首次启动
 
-通用目标仓库可使用[项目级可执行计划](docs/project-plans.md)：配置固定基线及任务，完成架构师和项目经理确认后执行。以下步骤继续保留原文章 demo，不能替代独立样例应用的交付验收。
+完整受管流程按[发布演示手册](docs/release-demo.md)启动。通用目标仓库使用[项目级可执行计划](docs/project-plans.md)：配置固定基线及任务，完成架构师和项目经理确认后执行。以下保留原文章 demo 的快捷启动，独立 MySQL 样例另有进程及数据库。
 
 先初始化固定版本的公开 MIT 样例：
 
@@ -74,7 +74,7 @@ Linux/macOS 使用 `bash ./scripts/bootstrap-sample.sh`。脚本会校验样例 
 
 ```powershell
 cd backend
-mvn.cmd spring-boot:run
+mvn.cmd --% -s ../scripts/maven-online-settings.xml -Dmaven.repo.local=.m2-repository spring-boot:run
 ```
 
 后端地址：
@@ -88,7 +88,7 @@ mvn.cmd spring-boot:run
 
 ```powershell
 cd frontend
-npm.cmd ci
+npm.cmd ci --cache ../.npm-cache
 npm.cmd run dev
 ```
 
@@ -142,10 +142,10 @@ npm.cmd run dev
 
 ```powershell
 cd backend
-mvn.cmd verify
+mvn.cmd --% -s ../scripts/maven-online-settings.xml -Dmaven.repo.local=.m2-repository verify
 
 cd ..\frontend
-npm.cmd ci
+npm.cmd ci --cache ../.npm-cache
 npm.cmd test
 npm.cmd run typecheck
 npm.cmd run build
